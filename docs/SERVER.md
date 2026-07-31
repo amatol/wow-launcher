@@ -47,9 +47,10 @@ python tools/generate_launcher_manifest.py dist/Dreamworld.exe \
 ## Веб-сервер и TLS
 
 Шаблон `deploy/nginx-dreamworld-launcher.conf` публикует только GET/HEAD.
-Перед рабочим включением требуются nginx, сертификат Let's Encrypt для
-`wotlk.amatol.blog` и правила firewall для TCP 80/443. Сейчас DNS имени уже
-указывает на сервер `87.237.52.36`, но эти службы и правила ещё не включены.
+nginx установлен и включён, TCP 80/443 разрешены в постоянной конфигурации
+nftables. Сертификат Let's Encrypt для `wotlk.amatol.blog` выпущен, а его
+автоматическое продление выполняет активный `certbot.timer`. Корень сайта
+возвращает 404; рабочие файлы доступны только под `/launcher/`.
 
 ## Границы интеграции
 

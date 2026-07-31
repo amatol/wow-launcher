@@ -171,14 +171,14 @@ def generate_icon(path: str):
     sizes = [16, 24, 32, 48, 64, 128, 256, 512, 1024]
     _build_ico(sizes, path)
 
-    print(f"Иконка сохранена: {path}")
-    print(f"  Размер файла: {os.path.getsize(path)} байт")
+    print(f"Icon saved: {path}")
+    print(f"  File size: {os.path.getsize(path)} bytes")
 
     # Проверка структуры
     with open(path, "rb") as f:
         data = f.read()
     _r, _t, count = struct.unpack_from("<HHH", data, 0)
-    print(f"  Фреймов в ICO: {count}")
+    print(f"  ICO frames: {count}")
     off = 6
     for i in range(count):
         w, h, _c, _res, _p, bpp, sz, doff = struct.unpack_from("<BBBBHHII", data, off)
@@ -191,7 +191,7 @@ def generate_icon(path: str):
     preview = draw_icon(1024)
     preview_path = os.path.splitext(path)[0] + "_preview.png"
     preview.save(preview_path)
-    print(f"Предпросмотр: {preview_path}")
+    print(f"Preview: {preview_path}")
 
 
 if __name__ == "__main__":

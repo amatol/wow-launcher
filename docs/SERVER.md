@@ -8,6 +8,7 @@
 /srv/dreamworld-launcher/
 ├── manifest.json
 ├── launcher_manifest.json
+├── news.json              # генерируется из Breaking News игрового сервера
 ├── Dreamworld.exe          # лаунчер
 └── files -> /opt/azerothcore/client
 ```
@@ -67,3 +68,18 @@ nftables. Сертификат Let's Encrypt для `wotlk.amatol.blog` выпу
   следует открывать наружу.
 - Полный клиент 3.3.5a и его лицензирование/право распространения должен
   предоставить владелец сервера. В текущей системе эталонного клиента нет.
+
+## Новости
+
+Единый источник новостей — управляемая страница
+`/root/wowserver/config/breaking-news/breakingnews.html`, которую использует
+модуль Breaking News на экране выбора персонажа. Команда
+`/root/wowserver/scripts/publish-breaking-news.sh` одновременно обновляет
+страницу модуля и атомарно создаёт `/srv/dreamworld-launcher/news.json` для
+лаунчера. Она также вызывается штатным `deploy-azerothcore.sh`.
+
+После редактирования страницы новости публикуются без полной пересборки:
+
+```bash
+sudo /root/wowserver/scripts/publish-breaking-news.sh
+```

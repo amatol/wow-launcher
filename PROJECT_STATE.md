@@ -31,6 +31,12 @@ Telegram-ботом из `/root/telegrambot`.
 
 ## Текущее состояние
 
+- Локальная ветка fast-forward обновлена до `b6a4f89`: добавлены горизонтальный
+  интерфейс, виджет новостей и точечная проверка файлов клиента.
+- `news.json` опубликован по HTTPS и больше не ведётся вручную на сервере:
+  `/root/wowserver/scripts/publish-breaking-news.sh` атомарно генерирует его из
+  единого источника Breaking News
+  `/root/wowserver/config/breaking-news/breakingnews.html`.
 - Репозиторий `amatol/wow-launcher` клонирован в `/root/launcher`.
 - GitHub CLI авторизован как `amatol`; credential-файл имеет права `0600`.
 - Ветка `main` синхронизирована с `origin/main`.
@@ -55,10 +61,9 @@ Telegram-ботом из `/root/telegrambot`.
 
 ## Ближайшие шаги
 
-1. Опубликовать `news.json` на сервере (`/srv/dreamworld-launcher/news.json`).
-2. Увеличить `LAUNCHER_VERSION` и пересобрать через CI.
-3. Проверить запуск `Dreamworld.exe` и обновление на реальной Windows-машине.
-4. Проверить сценарий чистой папки и сценарий уже установленного клиента.
+1. Увеличить `LAUNCHER_VERSION` и пересобрать через CI.
+2. Проверить запуск `Dreamworld.exe` и обновление на реальной Windows-машине.
+3. Проверить сценарий чистой папки и сценарий уже установленного клиента.
 
 ## Важные ограничения
 

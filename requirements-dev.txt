@@ -1,0 +1,5 @@
+# Dev/сборка зависимости (не обязательны для запуска на Windows)
+pyinstaller>=5.0
+# libtorrent-rasterbar — устанавливается отдельно на Windows:
+#   pip install libtorrent-rasterbar
+# Или скачать wheel: https://github.com/arvidn/libtorrent/releases

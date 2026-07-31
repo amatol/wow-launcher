@@ -1,0 +1,26 @@
+{
+  "version": "3.3.5a-r1",
+  "client_version": "3.3.5a",
+  "files": [
+    {
+      "path": "Wow.exe",
+      "size": 10485760,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "http_url": "https://example.com/wow/3.3.5a/Wow.exe",
+      "torrent_url": "https://example.com/wow/torrents/Wow.exe.torrent"
+    },
+    {
+      "path": "Data/patch-3.MPQ",
+      "size": 52428800,
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "http_url": "https://example.com/wow/3.3.5a/patch-3.MPQ",
+      "torrent_url": "https://example.com/wow/torrents/patch-3.MPQ.torrent"
+    },
+    {
+      "path": "Data/enUS/locale-enUS.MPQ",
+      "size": 10485760,
+      "sha256": "83d2870d6a2b5c5c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+      "http_url": "https://example.com/wow/3.3.5a/enUS/locale-enUS.MPQ"
+    }
+  ]
+}

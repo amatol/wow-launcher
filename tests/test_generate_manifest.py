@@ -13,6 +13,7 @@ class GenerateManifestTests(unittest.TestCase):
             (root / "Data" / "patch.MPQ").write_bytes(b"patch")
             (root / "Wow.exe").write_bytes(b"wow")
             (root / "Dreamworld.exe").write_bytes(b"launcher")
+            (root / "Repair.log").write_text("local state")
             (root / ".launcher_version").write_text("old")
             result = build_manifest(root, "20260731", "https://example.test/launcher/")
             self.assertEqual([item["path"] for item in result["files"]], ["Data/patch.MPQ", "Wow.exe"])

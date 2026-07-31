@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 
 EXCLUDED_PARTS = {".launcher_tmp", ".git"}
-EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe"}
+EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe", "Repair.log"}
 
 
 def sha256(path: Path) -> str:

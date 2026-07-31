@@ -18,6 +18,7 @@ a = Analysis(
         ('assets/dreamworld.ico', 'assets'),
         ('manifest.json', '.'),
         ('launcher_manifest.json', '.'),
+        ('news.json', '.'),
     ],
     hiddenimports=[],
     hookspath=[],

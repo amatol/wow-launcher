@@ -7,7 +7,7 @@ import sys
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QMessageBox, QInputDialog,
-    QProgressBar, QDialog, QApplication
+    QProgressBar, QDialog, QApplication, QFrame
 )
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QFont
@@ -18,9 +18,9 @@ from core.self_update import (
     fetch_launcher_manifest, is_update_available,
     download_update, apply_update,
 )
-from updater.manifest import Manifest, filter_needed, compute_needed_files
+from updater.manifest import Manifest, filter_needed
 from updater.http_updater import HTTPUpdater
-from ui.widgets import LogWidget, ProgressWidget
+from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
 
 
 class UpdateWorker(QThread):
@@ -54,25 +54,21 @@ class UpdateWorker(QThread):
 
     def run(self):
         try:
-            self.log_signal.emit("Загрузка манифеста...")
+            self.log_signal.emit("Проверка файлов клиента...")
             manifest = Manifest.fetch(self.manifest_url)
             self.log_signal.emit(f"Манифест: версия {manifest.version}, файлов: {len(manifest.files)}")
 
-            current = Config.get_current_version()
-            needed = filter_needed(manifest, current)
+            needed = filter_needed(manifest, Config.get_current_version(), self.game_dir)
 
             if not needed:
-                # Точечная проверка хэшей
-                needed = compute_needed_files(manifest, self.game_dir)
-
-            if not needed:
-                self.finished_signal.emit(True, "Обновлений нет. Клиент актуален.")
+                set_current_version(manifest.version)
+                self.finished_signal.emit(True, "Клиент актуален. Обновлений нет.")
                 return
 
-            self.log_signal.emit(f"Нужно обновить: {len(needed)} файлов")
+            self.log_signal.emit(f"Нужно обновить: {len(needed)} из {len(manifest.files)} файлов")
 
             # Попытка HTTP
-            self.log_signal.emit("Попытка HTTP-обновления...")
+            self.log_signal.emit("HTTP-обновление...")
             self._updater = HTTPUpdater(self.game_dir, manifest, self._progress_cb)
             ok, count = self._updater.apply_all(needed)
 
@@ -228,41 +224,53 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dreamworld Launcher")
-        self.setFixedSize(520, 520)
+        self.setFixedSize(720, 400)
         self.worker = None
         self.self_update_worker = None
         self.self_update_dialog = None
+        self.news_worker = None
 
         self._apply_dark_theme()
 
         central = QWidget()
         self.setCentralWidget(central)
-        layout = QVBoxLayout(central)
-        layout.setSpacing(10)
+        outer = QVBoxLayout(central)
+        outer.setContentsMargins(12, 12, 12, 12)
+        outer.setSpacing(8)
 
-        # Заголовок
-        title = QLabel("Dreamworld Launcher")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Segoe UI", 18, QFont.Bold))
+        # --- Верхняя панель: заголовок + инфо ---
+        top_bar = QHBoxLayout()
+        top_bar.setSpacing(12)
+
+        title = QLabel("Dreamworld")
+        title.setFont(QFont("Segoe UI", 16, QFont.Bold))
         title.setStyleSheet("color: #e94560;")
-        layout.addWidget(title)
+        title.setFixedHeight(36)
 
-        # Инфо
         self.info_label = QLabel()
-        self.info_label.setAlignment(Qt.AlignCenter)
         self.info_label.setStyleSheet("color: #a0a0a0; font-size: 12px;")
-        layout.addWidget(self.info_label)
+        self.info_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        # Прогресс
-        self.progress_widget = ProgressWidget()
-        layout.addWidget(self.progress_widget)
+        top_bar.addWidget(title)
+        top_bar.addStretch()
+        top_bar.addWidget(self.info_label)
+        outer.addLayout(top_bar)
 
-        # Лог
-        self.log_widget = LogWidget()
-        layout.addWidget(self.log_widget, stretch=1)
+        # --- Основная зона: новости слева, кнопки справа ---
+        main_row = QHBoxLayout()
+        main_row.setSpacing(12)
 
-        # Кнопки
-        btn_layout = QHBoxLayout()
+        # Новости
+        self.news_widget = NewsWidget()
+        main_row.addWidget(self.news_widget, stretch=1)
+
+        # Правая колонка с кнопками
+        right_panel = QFrame()
+        right_panel.setFixedWidth(180)
+        right_panel.setStyleSheet("QFrame { background: #16213e; border-radius: 8px; }")
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(12, 12, 12, 12)
+        right_layout.setSpacing(10)
 
         self.btn_update = QPushButton("Обновить")
         self.btn_update.setFixedHeight(40)
@@ -274,21 +282,36 @@ class MainWindow(QMainWindow):
         self.btn_cancel.clicked.connect(self.cancel_update)
 
         self.btn_play = QPushButton("Играть")
-        self.btn_play.setFixedHeight(40)
+        self.btn_play.setFixedHeight(46)
+        self.btn_play.setStyleSheet(
+            "QPushButton { background: #e94560; border: none; border-radius: 5px; "
+            "font-size: 15px; font-weight: bold; color: white; }"
+            "QPushButton:hover { background: #ff5570; }"
+            "QPushButton:pressed { background: #c81e3f; }"
+            "QPushButton:disabled { background: #3a2a3a; color: #777; }"
+        )
         self.btn_play.clicked.connect(self.play)
 
         self.btn_settings = QPushButton("Настройки")
-        self.btn_settings.setFixedHeight(40)
+        self.btn_settings.setFixedHeight(34)
         self.btn_settings.clicked.connect(self.open_settings)
 
-        btn_layout.addWidget(self.btn_update)
-        btn_layout.addWidget(self.btn_cancel)
-        btn_layout.addWidget(self.btn_play)
-        btn_layout.addWidget(self.btn_settings)
+        right_layout.addWidget(self.btn_update)
+        right_layout.addWidget(self.btn_cancel)
+        right_layout.addSpacing(6)
+        right_layout.addWidget(self.btn_play)
+        right_layout.addStretch()
+        right_layout.addWidget(self.btn_settings)
 
-        layout.addLayout(btn_layout)
+        main_row.addWidget(right_panel)
+        outer.addLayout(main_row, stretch=1)
+
+        # --- Прогресс-бар внизу ---
+        self.progress_widget = ProgressWidget()
+        outer.addWidget(self.progress_widget)
 
         self._refresh_info()
+        self._load_news()
 
         # Фоновая проверка обновлений лаунчера (тихая)
         self._start_self_update_check()
@@ -311,32 +334,43 @@ class MainWindow(QMainWindow):
         version = get_current_version()
         exe_status = "Wow.exe найден" if exe_found else "Wow.exe НЕ найден"
         self.info_label.setText(
-            f"Папка: {Config.GAME_DIR}\n"
-            f"Версия патча: {version} | {exe_status}"
+            f"Версия: {version}  |  {exe_status}"
         )
+
+    def _load_news(self):
+        """Запустить фоновую загрузку новостей сервера."""
+        self.news_worker = NewsWorker()
+        self.news_worker.news_signal.connect(self._on_news_loaded)
+        self.news_worker.start()
+
+    def _on_news_loaded(self, news_list):
+        self.news_widget.set_news(news_list)
 
     def start_update(self):
         if self.worker and self.worker.isRunning():
             return
-        self.log_widget.log("=== Начало обновления ===")
         self.progress_widget.reset()
+        self.progress_widget.set_status("Проверка файлов...", 0)
         self.btn_update.setEnabled(False)
         self.btn_cancel.setEnabled(True)
         self.btn_play.setEnabled(False)
 
         self.worker = UpdateWorker(Config.GAME_DIR, Config.MANIFEST_URL)
-        self.worker.log_signal.connect(self.log_widget.log)
+        self.worker.log_signal.connect(self._on_log_msg)
         self.worker.progress_signal.connect(self.progress_widget.set_status)
         self.worker.finished_signal.connect(self.on_update_finished)
         self.worker.start()
 
+    def _on_log_msg(self, msg: str):
+        """Обновить строку статуса из лог-сообщений воркера."""
+        self.progress_widget.set_status(msg, -1)
+
     def cancel_update(self):
         if self.worker and self.worker.isRunning():
             self.worker.cancel()
-            self.log_widget.log("Отмена...")
+            self.progress_widget.set_status("Отмена...", -1)
 
     def on_update_finished(self, success: bool, message: str):
-        self.log_widget.log(message)
         self.progress_widget.set_status(
             message, 100 if success else 0
         )
@@ -349,7 +383,7 @@ class MainWindow(QMainWindow):
         if not check_wow_executable():
             QMessageBox.warning(self, "Ошибка", "Wow.exe не найден в папке лаунчера!")
             return
-        self.log_widget.log("Запуск WoW...")
+        self.progress_widget.set_status("Запуск WoW...", -1)
         launch_wow()
         self.close()
 
@@ -360,7 +394,7 @@ class MainWindow(QMainWindow):
         )
         if ok and text:
             Config.MANIFEST_URL = text
-            self.log_widget.log(f"URL манифеста изменён: {text}")
+            self.progress_widget.set_status("URL манифеста изменён", -1)
 
     # --- Самообновление лаунчера ---
 
@@ -379,7 +413,9 @@ class MainWindow(QMainWindow):
 
     def _start_self_update_download(self, manifest: dict):
         """Начать скачивание обновления лаунчера."""
-        self.log_widget.log(f"Скачивание обновления лаунчера {manifest.get('version', '?')}...")
+        self.progress_widget.set_status(
+            f"Скачивание лаунчера {manifest.get('version', '?')}...", -1
+        )
 
         self.self_update_worker = SelfUpdateWorker()
         self.self_update_worker.download_progress_signal.connect(self._on_self_update_progress)
@@ -395,14 +431,14 @@ class MainWindow(QMainWindow):
 
     def _on_self_update_downloaded(self, success: bool, path: str):
         if not success or not path:
-            self.log_widget.log("Не удалось скачать обновление лаунчера.")
+            self.progress_widget.set_status("Не удалось скачать обновление лаунчера.", -1)
             return
 
-        self.log_widget.log("Обновление скачано. Перезапуск...")
+        self.progress_widget.set_status("Обновление скачано. Перезапуск...", -1)
 
         ok = apply_update(path)
         if ok:
             # Завершаем текущий процесс — bat-скрипт заменит .exe и перезапустит
             QApplication.quit()
         else:
-            self.log_widget.log("Не удалось применить обновление.")
+            self.progress_widget.set_status("Не удалось применить обновление.", -1)

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from updater.manifest import Manifest, compute_needed_files
+from updater.manifest import Manifest, compute_needed_files, filter_needed
 
 
 class ManifestTests(unittest.TestCase):
@@ -28,6 +28,30 @@ class ManifestTests(unittest.TestCase):
             self.assertEqual(compute_needed_files(manifest, directory), [])
             path.write_bytes(b"changed")
             self.assertEqual(len(compute_needed_files(manifest, directory)), 1)
+
+    def test_filter_needed_checks_existing_files(self):
+        """filter_needed должен проверять локальные файлы, а не качать всё при несовпадении версии."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory, "Wow.exe")
+            path.write_bytes(b"client")
+            good_hash = hashlib.sha256(b"client").hexdigest()
+            manifest = Manifest.from_dict({
+                "version": "20260731",
+                "files": [{"path": "Wow.exe", "size": 6, "sha256": good_hash}],
+            })
+            # Версия не совпадает, но файл уже на месте и хэш верный — скачивать не нужно
+            needed = filter_needed(manifest, "00000000", directory)
+            self.assertEqual(needed, [])
+
+    def test_filter_needed_downloads_missing_file(self):
+        """filter_needed должен вернуть отсутствующие файлы."""
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Manifest.from_dict({
+                "version": "20260731",
+                "files": [{"path": "Wow.exe", "size": 6, "sha256": "a" * 64}],
+            })
+            needed = filter_needed(manifest, "20260731", directory)
+            self.assertEqual(len(needed), 1)
 
 
 if __name__ == "__main__":

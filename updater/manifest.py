@@ -70,21 +70,18 @@ class Manifest:
             return cls.from_dict(json.load(f))
 
 
-def filter_needed(manifest: Manifest, current_version: Optional[str]) -> List[FileEntry]:
+def filter_needed(manifest: Manifest, current_version: Optional[str], game_dir: str) -> List[FileEntry]:
     """
     Вернуть список файлов, которые нужно скачать/обновить.
-    Если текущая версия отличается — качаем всё.
-    Если версии совпадают — ничего не нужно.
+    Всегда проверяет существующие файлы по размеру и SHA-256.
     """
-    if current_version is None or current_version != manifest.version:
-        return list(manifest.files)
-    return []
+    return compute_needed_files(manifest, game_dir)
 
 
 def compute_needed_files(manifest: Manifest, game_dir: str) -> List[FileEntry]:
     """
-    Точечная проверка: для каждого файла из манифеста проверить размер/хэш
-    на диске. Вернуть только те, которые отличаются.
+    Точечная проверка: для каждого файла из манифеста проверить размер и SHA-256
+    на диске. Вернуть только те, которые отсутствуют или отличаются.
     """
     needed = []
     for entry in manifest.files:

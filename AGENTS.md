@@ -93,6 +93,7 @@ main.py                 — точка входа, QApplication + иконка
 config.py               — Config: пути, URL, таймауты, версия лаунчера
 manifest.json           — пример манифеста обновлений клиента
 launcher_manifest.json  — пример манифеста обновлений лаунчера
+news.json               — пример новостей сервера
 generate_icon.py        — генерация dreamworld.ico (D, золото, 16–1024px)
 Dreamworld.spec         — PyInstaller spec (onefile, windowed, icon)
 core/
@@ -104,7 +105,7 @@ updater/
   torrent_updater.py    — BitTorrent фолбэк (libtorrent, optional)
 ui/
   main_window.py        — главное окно, UpdateWorker, SelfUpdateWorker, SelfUpdateDialog
-  widgets.py            — LogWidget, ProgressWidget
+  widgets.py            — NewsWidget, NewsWorker, ProgressWidget
 assets/
   dreamworld.ico        — иконка (9 размеров, PNG-в-ICO для >256)
 .github/workflows/
@@ -116,9 +117,9 @@ assets/
 ### Обновление клиента
 1. `Config.GAME_DIR` = папка запуска (через `sys.executable` если frozen)
 2. Качает `manifest.json` с `MANIFEST_URL`
-3. Сравнивает версии → если отличаются, качает все файлы
-4. Иначе точечная проверка по SHA-256/размеру
-5. HTTP скачивание → если fail → BitTorrent фолбэк
+3. **Всегда** проверяет каждый файл из манифеста по размеру и SHA-256 на диске
+4. Если файл уже существует и хэш совпадает — пропускает
+5. Иначе HTTP скачивание недостающих/изменённых файлов → если fail → BitTorrent
 6. Бэкап `.bak` перед заменой, проверка хэша после
 7. Записывает новую версию в `.launcher_version`
 

@@ -24,6 +24,9 @@ class Config:
     # URL манифеста обновлений (JSON)
     MANIFEST_URL = f"{UPDATE_BASE_URL}/manifest.json"
 
+    # URL новостей сервера (JSON: список {title, date, body})
+    NEWS_URL = f"{UPDATE_BASE_URL}/news.json"
+
     # Таймаут HTTP-запросов (сек)
     HTTP_TIMEOUT = 30
 

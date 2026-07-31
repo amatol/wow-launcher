@@ -117,31 +117,37 @@ def apply_update(new_exe_path: str) -> bool:
         return False
 
     current_exe = sys.executable if getattr(sys, "frozen", False) else None
-    if not current_exe:
+    if not current_exe or sys.platform != "win32":
         return False
 
+    current_exe = os.path.abspath(current_exe)
+    new_exe_path = os.path.abspath(new_exe_path)
     exe_dir = os.path.dirname(current_exe)
     exe_name = os.path.basename(current_exe)
+    expected_new = os.path.abspath(
+        os.path.join(Config.TEMP_DIR, Config.LAUNCHER_EXE_NAME + ".new")
+    )
+
+    # Самообновление имеет право заменить ровно один известный файл. Любое
+    # отличие пути считается ошибкой и не передаётся командному интерпретатору.
+    if exe_name.lower() != Config.LAUNCHER_EXE_NAME.lower():
+        return False
+    if os.path.normcase(new_exe_path) != os.path.normcase(expected_new):
+        return False
+    if os.path.dirname(exe_dir) == exe_dir:
+        return False
+    if any(char in current_exe + new_exe_path for char in ('%', '!', '"', '\r', '\n')):
+        return False
+
     bat_path = os.path.join(exe_dir, ".dreamworld_updater.bat")
+    log_path = os.path.join(exe_dir, ".dreamworld_updater.log")
 
-    # bat-скрипт: ждёт завершения процесса, заменяет .exe, перезапускает
-    bat_content = f"""@echo off
-chcp 65001 >nul 2>&1
-set "EXE={exe_dir}\\{exe_name}"
-set "NEW={new_exe_path}"
-
-:wait
-tasklist /fi "pid eq {os.getpid()}" 2>nul | find "{os.getpid()}" >nul
-if not errorlevel 1 (
-    timeout /t 1 /nobreak >nul
-    goto wait
-)
-
-copy /y "%NEW%" "%EXE%" >nul 2>&1
-del /f /q "%NEW%" >nul 2>&1
-start "" "%EXE%"
-del /f /q "%bat_path%" >nul 2>&1
-"""
+    bat_content = _build_updater_script(
+        current_exe=current_exe,
+        new_exe_path=new_exe_path,
+        log_path=log_path,
+        pid=os.getpid(),
+    )
 
     try:
         with open(bat_path, "w", encoding="utf-8") as f:
@@ -149,11 +155,59 @@ del /f /q "%bat_path%" >nul 2>&1
     except Exception:
         return False
 
-    # Запустить bat в отдельном процессе
+    # Сброс заставляет новый PyInstaller one-file процесс распаковать
+    # собственный runtime, а не использовать удаляемый каталог старого процесса.
+    env = os.environ.copy()
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    env.pop("_PYI_APPLICATION_HOME_DIR", None)
+    env.pop("_MEIPASS2", None)
+
     import subprocess
-    subprocess.Popen(
-        ["cmd", "/c", bat_path],
-        cwd=exe_dir,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-    )
+    try:
+        subprocess.Popen(
+            ["cmd.exe", "/d", "/c", bat_path],
+            cwd=exe_dir,
+            env=env,
+            creationflags=(
+                subprocess.CREATE_NEW_PROCESS_GROUP
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+            ),
+        )
+    except Exception:
+        return False
     return True
+
+
+def _build_updater_script(current_exe: str, new_exe_path: str, log_path: str, pid: int) -> str:
+    """Создать BAT без команд удаления и без доступа к файлам клиента."""
+    return f"""@echo off
+setlocal DisableDelayedExpansion
+chcp 65001 >nul 2>&1
+set "EXE={current_exe}"
+set "NEW={new_exe_path}"
+set "LOG={log_path}"
+set "PYINSTALLER_RESET_ENVIRONMENT=1"
+set "_PYI_APPLICATION_HOME_DIR="
+set "_MEIPASS2="
+
+echo [%date% %time%] Ожидание завершения PID {pid}.>"%LOG%"
+
+:wait
+tasklist /fi "pid eq {pid}" 2>nul | find "{pid}" >nul
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >nul
+    goto wait
+)
+
+echo [%date% %time%] Замена только Dreamworld.exe.>>"%LOG%"
+move /y "%NEW%" "%EXE%" >>"%LOG%" 2>&1
+if errorlevel 1 (
+    echo [%date% %time%] ОШИБКА: замена не выполнена.>>"%LOG%"
+    exit /b 1
+)
+
+echo [%date% %time%] Запуск обновлённого лаунчера.>>"%LOG%"
+start "" "%EXE%"
+if errorlevel 1 echo [%date% %time%] ОШИБКА: запуск не выполнен.>>"%LOG%"
+endlocal
+"""

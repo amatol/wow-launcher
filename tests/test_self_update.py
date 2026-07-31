@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -72,6 +73,9 @@ class SelfUpdateTests(unittest.TestCase):
             self.assertEqual(sentinel.read_bytes(), b"wow-client-sentinel")
             self.assertEqual(data_file.read_bytes(), b"client-data-sentinel")
             self.assertTrue(bat.exists())
+            # START асинхронный; дать короткоживущему whoami.exe завершиться,
+            # прежде чем TemporaryDirectory удалит тестовый каталог.
+            time.sleep(1)
 
 
 if __name__ == "__main__":

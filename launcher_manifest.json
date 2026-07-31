@@ -1,7 +1,7 @@
 {
   "version": "2026080101",
   "download_url": "https://wotlk.amatol.blog/launcher/Dreamworld.exe",
-  "size": 37623821,
-  "sha256": "7dfc029b1509ffabc8dd436306323432b1bae61104089dc2d0b602da6438d963",
+  "size": 37623599,
+  "sha256": "2b4f5c7abff406768f6d7a41e9bf81d93b46282268f5a8b01ddea0b78a79f94d",
   "changelog": "Безопасное самообновление без команд удаления; исправлен запуск PyInstaller после замены"
 }

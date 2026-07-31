@@ -6,13 +6,18 @@ import sys
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QMessageBox, QInputDialog
+    QPushButton, QLabel, QMessageBox, QInputDialog,
+    QProgressBar, QDialog, QApplication
 )
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QFont
 
 from config import Config
 from core.version import check_wow_executable, launch_wow, get_current_version, set_current_version
+from core.self_update import (
+    fetch_launcher_manifest, is_update_available,
+    download_update, apply_update,
+)
 from updater.manifest import Manifest, filter_needed, compute_needed_files
 from updater.http_updater import HTTPUpdater
 from ui.widgets import LogWidget, ProgressWidget
@@ -104,12 +109,129 @@ class UpdateWorker(QThread):
             self.finished_signal.emit(False, f"Ошибка: {e}")
 
 
+class SelfUpdateWorker(QThread):
+    """
+    Фоновый поток проверки обновлений самого лаунчера.
+    Тихий: если обновлений нет или ошибка сети — ничего не показывает.
+    """
+
+    update_available_signal = pyqtSignal(dict)  # манифест, если есть обновление
+    download_progress_signal = pyqtSignal(int, int)  (downloaded, total)
+    download_finished_signal = pyqtSignal(bool, str)  # (успех, путь_к_файлу)
+
+    def __init__(self):
+        super().__init__()
+        self._manifest = None
+        self._download_mode = False
+
+    def check_only(self):
+        self._download_mode = False
+        self.start()
+
+    def download_and_apply(self, manifest: dict):
+        self._manifest = manifest
+        self._download_mode = True
+        self.start()
+
+    def run(self):
+        if self._download_mode:
+            self._do_download()
+        else:
+            self._do_check()
+
+    def _do_check(self):
+        manifest = fetch_launcher_manifest()
+        if manifest is None:
+            return
+        if is_update_available(manifest):
+            self.update_available_signal.emit(manifest)
+
+    def _do_download(self):
+        ok, path = download_update(
+            self._manifest,
+            progress_cb=lambda d, t, msg: self.download_progress_signal.emit(d, t),
+        )
+        self.download_finished_signal.emit(ok, path)
+
+
+class SelfUpdateDialog(QDialog):
+    """Диалог предложения обновить лаунчер."""
+
+    def __init__(self, manifest: dict, parent=None):
+        super().__init__(parent)
+        self.manifest = manifest
+        self.setWindowTitle("Доступно обновление лаунчера")
+        self.setFixedSize(380, 200)
+        self._apply_theme()
+
+        layout = QVBoxLayout(self)
+
+        remote_ver = manifest.get("version", "?")
+        changelog = manifest.get("changelog", "")
+
+        label = QLabel(
+            f"Доступна новая версия лаунчера: {remote_ver}\n"
+            f"Текущая версия: {Config.LAUNCHER_VERSION}"
+        )
+        label.setAlignment(Qt.AlignCenter)
+        label.setStyleSheet("color: #e0e0e0; font-size: 13px;")
+        layout.addWidget(label)
+
+        if changelog:
+            ch_label = QLabel(f"Что нового:\n{changelog}")
+            ch_label.setStyleSheet("color: #a0a0a0; font-size: 11px;")
+            ch_label.setWordWrap(True)
+            layout.addWidget(ch_label)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
+        layout.addWidget(self.progress_bar)
+
+        btn_layout = QHBoxLayout()
+        self.btn_yes = QPushButton("Обновить")
+        self.btn_no = QPushButton("Позже")
+        self.btn_yes.setFixedHeight(34)
+        self.btn_no.setFixedHeight(34)
+        btn_layout.addWidget(self.btn_yes)
+        btn_layout.addWidget(self.btn_no)
+        layout.addLayout(btn_layout)
+
+        self.btn_yes.clicked.connect(self.accept)
+        self.btn_no.clicked.connect(self.reject)
+
+    def _apply_theme(self):
+        self.setStyleSheet("""
+            QDialog { background: #0f0f23; }
+            QLabel { color: #e0e0e0; }
+            QPushButton {
+                background: #16213e; border: 1px solid #0f3460;
+                border-radius: 5px; padding: 6px 16px; font-size: 13px;
+                color: #e0e0e0;
+            }
+            QPushButton:hover { background: #0f3460; }
+            QProgressBar {
+                background: #16213e; border: 1px solid #0f3460;
+                border-radius: 4px; text-align: center; color: white;
+            }
+            QProgressBar::chunk { background: #0f3460; border-radius: 3px; }
+        """)
+
+    def set_progress(self, downloaded: int, total: int):
+        self.progress_bar.setVisible(True)
+        if total > 0:
+            self.progress_bar.setValue(int(downloaded / total * 100))
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dreamworld Launcher")
         self.setFixedSize(520, 520)
         self.worker = None
+        self.self_update_worker = None
+        self.self_update_dialog = None
 
         self._apply_dark_theme()
 
@@ -167,6 +289,9 @@ class MainWindow(QMainWindow):
         layout.addLayout(btn_layout)
 
         self._refresh_info()
+
+        # Фоновая проверка обновлений лаунчера (тихая)
+        self._start_self_update_check()
 
     def _apply_dark_theme(self):
         self.setStyleSheet("""
@@ -236,3 +361,48 @@ class MainWindow(QMainWindow):
         if ok and text:
             Config.MANIFEST_URL = text
             self.log_widget.log(f"URL манифеста изменён: {text}")
+
+    # --- Самообновление лаунчера ---
+
+    def _start_self_update_check(self):
+        """Запустить тихую фоновую проверку обновлений лаунчера."""
+        self.self_update_worker = SelfUpdateWorker()
+        self.self_update_worker.update_available_signal.connect(self._on_self_update_available)
+        self.self_update_worker.check_only()
+
+    def _on_self_update_available(self, manifest: dict):
+        """Обновление лаунчера доступно — показать диалог."""
+        self.self_update_dialog = SelfUpdateDialog(manifest, self)
+
+        if self.self_update_dialog.exec_() == QDialog.Accepted:
+            self._start_self_update_download(manifest)
+
+    def _start_self_update_download(self, manifest: dict):
+        """Начать скачивание обновления лаунчера."""
+        self.log_widget.log(f"Скачивание обновления лаунчера {manifest.get('version', '?')}...")
+
+        self.self_update_worker = SelfUpdateWorker()
+        self.self_update_worker.download_progress_signal.connect(self._on_self_update_progress)
+        self.self_update_worker.download_finished_signal.connect(self._on_self_update_downloaded)
+        self.self_update_worker.download_and_apply(manifest)
+
+    def _on_self_update_progress(self, downloaded: int, total: int):
+        if self.self_update_dialog and self.self_update_dialog.isVisible():
+            self.self_update_dialog.set_progress(downloaded, total)
+        if total > 0:
+            pct = int(downloaded / total * 100)
+            self.progress_widget.set_status(f"Обновление лаунчера: {pct}%", pct)
+
+    def _on_self_update_downloaded(self, success: bool, path: str):
+        if not success or not path:
+            self.log_widget.log("Не удалось скачать обновление лаунчера.")
+            return
+
+        self.log_widget.log("Обновление скачано. Перезапуск...")
+
+        ok = apply_update(path)
+        if ok:
+            # Завершаем текущий процесс — bat-скрипт заменит .exe и перезапустит
+            QApplication.quit()
+        else:
+            self.log_widget.log("Не удалось применить обновление.")

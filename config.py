@@ -41,6 +41,16 @@ class Config:
     # Макс. секунд ожидания торрента перед фолбэком
     TORRENT_TIMEOUT = 300
 
+    # --- Самообновление лаунчера ---
+    # Версия самого лаунчера
+    LAUNCHER_VERSION = "1.0.0"
+
+    # URL манифеста обновлений лаунчера (JSON)
+    LAUNCHER_MANIFEST_URL = "https://example.com/wow/launcher_manifest.json"
+
+    # Имя .exe файла лаунчера
+    LAUNCHER_EXE_NAME = "Dreamworld.exe"
+
     @classmethod
     def detect_wow_exe(cls):
         """Найти Wow.exe в папке запуска."""

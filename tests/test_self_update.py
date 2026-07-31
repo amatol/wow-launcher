@@ -1,4 +1,10 @@
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
 import unittest
+from pathlib import Path
 
 from core.self_update import _build_updater_script, _compare_versions
 
@@ -26,6 +32,46 @@ class SelfUpdateTests(unittest.TestCase):
         self.assertNotIn("*", script)
         self.assertNotIn("rmdir", script.lower())
         self.assertNotIn("rd /", script.lower())
+
+    @unittest.skipUnless(sys.platform == "win32", "интеграционный тест Windows BAT")
+    def test_windows_script_preserves_unrelated_client_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            current = root / "Dreamworld.exe"
+            update_dir = root / ".launcher_tmp"
+            update_dir.mkdir()
+            new = update_dir / "Dreamworld.exe.new"
+            log = root / ".dreamworld_updater.log"
+            sentinel = root / "Wow.exe"
+            data_file = root / "Data" / "client-data.bin"
+            data_file.parent.mkdir()
+
+            shutil.copy2(Path(os.environ["WINDIR"]) / "System32" / "where.exe", current)
+            shutil.copy2(Path(os.environ["WINDIR"]) / "System32" / "whoami.exe", new)
+            expected = new.read_bytes()
+            sentinel.write_bytes(b"wow-client-sentinel")
+            data_file.write_bytes(b"client-data-sentinel")
+
+            finished = subprocess.Popen(["cmd.exe", "/d", "/c", "exit", "0"])
+            finished.wait(timeout=10)
+            script = _build_updater_script(
+                str(current), str(new), str(log), finished.pid
+            )
+            bat = root / ".dreamworld_updater.bat"
+            bat.write_text(script, encoding="utf-8")
+
+            subprocess.run(
+                ["cmd.exe", "/d", "/c", str(bat)],
+                cwd=root,
+                check=True,
+                timeout=30,
+            )
+
+            self.assertEqual(current.read_bytes(), expected)
+            self.assertFalse(new.exists())
+            self.assertEqual(sentinel.read_bytes(), b"wow-client-sentinel")
+            self.assertEqual(data_file.read_bytes(), b"client-data-sentinel")
+            self.assertTrue(bat.exists())
 
 
 if __name__ == "__main__":

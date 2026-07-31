@@ -7,11 +7,12 @@ import sys
 
 
 class Config:
+    UPDATE_BASE_URL = "https://wotlk.amatol.blog/launcher"
     # Папка, в которой запущен лаунчер = папка с клиентом WoW
     GAME_DIR = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, "frozen", False) else __file__))
 
     # Исполняемый файл клиента
-    WOW_EXE_NAMES = ["Dreamworld.exe", "Wow.exe", "wow.exe", "WoW.exe"]
+    WOW_EXE_NAMES = ["Wow.exe", "wow.exe", "WoW.exe"]
     WOW_EXE = None
 
     # Версия клиента (формат YYYYMMDD)
@@ -21,7 +22,7 @@ class Config:
     VERSION_FILE = os.path.join(GAME_DIR, ".launcher_version")
 
     # URL манифеста обновлений (JSON)
-    MANIFEST_URL = "https://example.com/wow/manifest.json"
+    MANIFEST_URL = f"{UPDATE_BASE_URL}/manifest.json"
 
     # Таймаут HTTP-запросов (сек)
     HTTP_TIMEOUT = 30
@@ -46,7 +47,7 @@ class Config:
     LAUNCHER_VERSION = "20260731"
 
     # URL манифеста обновлений лаунчера (JSON)
-    LAUNCHER_MANIFEST_URL = "https://example.com/wow/launcher_manifest.json"
+    LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"
 
     # Имя .exe файла лаунчера
     LAUNCHER_EXE_NAME = "Dreamworld.exe"

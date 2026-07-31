@@ -4,6 +4,7 @@
 """
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -29,17 +30,29 @@ class Manifest:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Manifest":
+        if not isinstance(data, dict):
+            raise ValueError("Манифест должен быть JSON-объектом")
+        version = str(data.get("version", "")).strip()
+        if not version.isdigit() or len(version) != 8:
+            raise ValueError("Версия манифеста должна иметь формат YYYYMMDD")
         files = []
         for f in data.get("files", []):
+            path = _validate_relative_path(f["path"])
+            size = int(f.get("size", 0))
+            if size < 0:
+                raise ValueError(f"Отрицательный размер файла: {path}")
+            sha256 = str(f.get("sha256", "")).lower()
+            if sha256 and not re.fullmatch(r"[0-9a-f]{64}", sha256):
+                raise ValueError(f"Некорректный SHA-256: {path}")
             files.append(FileEntry(
-                path=f["path"],
-                size=f.get("size", 0),
-                sha256=f.get("sha256", ""),
+                path=path,
+                size=size,
+                sha256=sha256,
                 http_url=f.get("http_url"),
                 torrent_url=f.get("torrent_url"),
             ))
         return cls(
-            version=data.get("version", "0"),
+            version=version,
             files=files,
             raw=data,
         )
@@ -100,3 +113,15 @@ def _sha256_file(path: str, chunk: int = 65536) -> str:
                 break
             h.update(data)
     return h.hexdigest()
+
+
+def _validate_relative_path(path: str) -> str:
+    """Не позволить серверному манифесту писать вне папки клиента."""
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("Пустой путь в манифесте")
+    normalized = path.replace("\\", "/")
+    drive, _ = os.path.splitdrive(normalized)
+    parts = normalized.split("/")
+    if drive or re.match(r"^[A-Za-z]:", normalized) or normalized.startswith("/") or any(part in ("", ".", "..") for part in parts):
+        raise ValueError(f"Небезопасный путь в манифесте: {path}")
+    return "/".join(parts)

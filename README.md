@@ -12,7 +12,7 @@
 - **Манифест-система** — JSON с описанием версий и файлов
 - **Точечная проверка** — качает только изменившиеся файлы (по размеру/хэшу)
 - **Самообновление лаунчера** — фоновая проверка, диалог при обновлении, замена через bat-скрипт
-- **Кнопка «Играть»** — запускает `Dreamworld.exe` / `Wow.exe` из папки лаунчера
+- **Кнопка «Играть»** — запускает игровой `Wow.exe` из папки лаунчера
 
 ## Структура
 
@@ -24,7 +24,7 @@ wow-launcher/
 ├── launcher_manifest.json  # пример манифеста обновлений лаунчера
 ├── requirements.txt
 ├── core/
-│   ├── version.py          # проверка/запуск Dreamworld.exe / Wow.exe
+│   ├── version.py          # проверка/запуск игрового Wow.exe
 │   └── self_update.py      # самообновление лаунчера (фон, bat-замена)
 ├── updater/
 │   ├── manifest.py         # парсинг манифеста, проверка хэшей
@@ -54,7 +54,7 @@ pip install -r requirements.txt
 
 ## Запуск
 
-Поместите `main.py` (или собранный `.exe`) в папку с клиентом WoW, затем:
+Поместите `main.py` (или собранный лаунчер `Dreamworld.exe`) в папку с клиентом WoW, затем:
 
 ```bash
 python main.py
@@ -68,7 +68,7 @@ python main.py
 Или отредактируйте `config.py`:
 
 ```python
-MANIFEST_URL = "https://your-server.com/wow/manifest.json"
+MANIFEST_URL = "https://wotlk.amatol.blog/launcher/manifest.json"
 ```
 
 ### Формат манифеста
@@ -103,7 +103,7 @@ MANIFEST_URL = "https://your-server.com/wow/manifest.json"
 
 1. Лаунчер определяет свою папку как папку клиента (`Config.GAME_DIR`)
 2. **В фоне** проверяет обновление самого себя через `LAUNCHER_MANIFEST_URL`
-3. Ищет `Dreamworld.exe` / `Wow.exe` в этой папке
+3. Ищет игровой `Wow.exe` в этой папке
 4. Качает манифест клиента с `MANIFEST_URL`
 5. Сравнивает версию манифеста с локальной (`.launcher_version`)
 6. Определяет нужные файлы (версия отличается или хэш не совпадает)
@@ -111,7 +111,7 @@ MANIFEST_URL = "https://your-server.com/wow/manifest.json"
 8. Проверяет SHA-256 каждого скачанного файла
 9. Создаёт бэкап существующего файла (`.bak`) перед заменой
 10. После успеха — записывает новую версию
-11. Кнопка «Играть» запускает `Dreamworld.exe` / `Wow.exe`
+11. Кнопка «Играть» запускает `Wow.exe`
 
 ## Самообновление лаунчера
 
@@ -121,10 +121,8 @@ MANIFEST_URL = "https://your-server.com/wow/manifest.json"
 2. Сравнивает `version` с `Config.LAUNCHER_VERSION`
 3. Если новее — показывает диалог «Доступно обновление»
 4. При согласии — качает `Dreamworld.exe.new`, проверяет SHA-256
-5. Создаёт `.dreamworld_updater.bat`, который:
-   - ждёт завершения текущего процесса
-   - заменяет `Dreamworld.exe` → `.new`
-   - перезапускает `Dreamworld.exe`
+5. Создаёт `.dreamworld_updater.bat`, который ждёт завершения процесса,
+   заменяет `Dreamworld.exe` и перезапускает лаунчер
 6. Текущий процесс завершается
 7. **Если обновлений нет или сервер недоступен — ничего не показывается**
 
@@ -135,7 +133,7 @@ MANIFEST_URL = "https://your-server.com/wow/manifest.json"
 ```json
 {
   "version": "1.0.0",
-  "download_url": "https://example.com/wow/Dreamworld.exe",
+  "download_url": "https://wotlk.amatol.blog/launcher/Dreamworld.exe",
   "size": 37748736,
   "sha256": "e3b0c44298fc1c149...",
   "changelog": "What's new"
@@ -149,4 +147,6 @@ pip install pyinstaller
 pyinstaller --onefile --windowed main.py
 ```
 
-Скопируйте `main.exe` из `dist/` в папку клиента.
+Штатная сборка выполняется через `Dreamworld.spec`; результат —
+`dist/Dreamworld.exe`. Инструкция серверной публикации находится в
+[`docs/SERVER.md`](docs/SERVER.md).

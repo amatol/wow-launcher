@@ -9,13 +9,13 @@ from config import Config
 
 
 def check_wow_executable() -> bool:
-    """Проверить, что Dreamworld.exe / Wow.exe существует в папке."""
+    """Проверить, что игровой Wow.exe существует в папке."""
     exe = Config.detect_wow_exe()
     return exe is not None
 
 
 def launch_wow(exe_path: str = None) -> bool:
-    """Запустить Dreamworld.exe / Wow.exe."""
+    """Запустить игровой Wow.exe."""
     exe = exe_path or Config.WOW_EXE
     if not exe:
         exe = Config.detect_wow_exe()

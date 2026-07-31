@@ -1,7 +1,7 @@
 {
   "version": "20260731",
-  "download_url": "https://example.com/wow/Dreamworld.exe",
-  "size": 37748736,
+  "download_url": "https://wotlk.amatol.blog/launcher/Dreamworld.exe",
+  "size": 0,
   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "changelog": "Initial release"
+  "changelog": "Первая версия"
 }

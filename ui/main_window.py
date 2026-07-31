@@ -116,7 +116,7 @@ class SelfUpdateWorker(QThread):
     """
 
     update_available_signal = pyqtSignal(dict)  # манифест, если есть обновление
-    download_progress_signal = pyqtSignal(int, int)  (downloaded, total)
+    download_progress_signal = pyqtSignal(int, int)  # downloaded, total
     download_finished_signal = pyqtSignal(bool, str)  # (успех, путь_к_файлу)
 
     def __init__(self):

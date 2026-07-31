@@ -29,6 +29,9 @@ jobs:
       - name: Generate icon
         run: python generate_icon.py
 
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
       - name: Build Dreamworld.exe
         run: pyinstaller Dreamworld.spec --noconfirm
 

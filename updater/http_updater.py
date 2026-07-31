@@ -5,7 +5,7 @@ HTTP/FTP обновление.
 import os
 import shutil
 import hashlib
-from typing import Callable, List, Optional
+from typing import Callable, List
 
 import requests
 
@@ -34,7 +34,8 @@ class HTTPUpdater:
             return False
 
         Config.ensure_temp_dir()
-        tmp_path = os.path.join(Config.TEMP_DIR, os.path.basename(dest_path) + ".part")
+        tmp_name = hashlib.sha256(entry.path.encode("utf-8")).hexdigest() + ".part"
+        tmp_path = os.path.join(Config.TEMP_DIR, tmp_name)
 
         self.progress_cb(0, 0, 0, 0, f"Скачивание {entry.path} ...")
 
@@ -56,6 +57,10 @@ class HTTPUpdater:
                         self.progress_cb(0, 0, downloaded, total, f"Скачивание {entry.path}: {downloaded}/{total}")
 
             # Проверка хэша
+            if entry.size and downloaded != entry.size:
+                os.remove(tmp_path)
+                self.progress_cb(0, 0, 0, 0, f"[!] Размер не совпадает: {entry.path}")
+                return False
             if entry.sha256 and h.hexdigest().lower() != entry.sha256.lower():
                 os.remove(tmp_path)
                 self.progress_cb(0, 0, 0, 0, f"[!] Хэш не совпадает: {entry.path}")
@@ -63,7 +68,7 @@ class HTTPUpdater:
 
             # Создаём папки и перемещаем файл
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            shutil.move(tmp_path, dest_path)
+            os.replace(tmp_path, dest_path)
             self.progress_cb(0, 0, downloaded, total, f"OK: {entry.path}")
             return True
 

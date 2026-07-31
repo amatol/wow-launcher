@@ -16,8 +16,6 @@
 import hashlib
 import os
 import sys
-import tempfile
-import time
 from typing import Callable, Optional, Tuple
 
 import requests
@@ -95,6 +93,9 @@ def download_update(manifest: dict, progress_cb: ProgressCallback = None) -> Tup
                         progress_cb(downloaded, total, "Downloading launcher update...")
 
         # Проверка хэша
+        if expected_size and downloaded != expected_size:
+            os.remove(tmp_path)
+            return False, ""
         if expected_sha256 and h.hexdigest().lower() != expected_sha256.lower():
             os.remove(tmp_path)
             return False, ""

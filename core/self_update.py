@@ -52,30 +52,13 @@ def is_update_available(manifest: dict) -> bool:
 
 
 def _compare_versions(v1: str, v2: str) -> int:
-    """Сравнить semver-строки. Возвращает -1/0/1."""
-    def parse(v):
-        parts = []
-        for p in v.split("."):
-            num = ""
-            for ch in p:
-                if ch.isdigit():
-                    num += ch
-                else:
-                    break
-            parts.append(int(num) if num else 0)
-        return parts
-
-    p1 = parse(v1)
-    p2 = parse(v2)
-    while len(p1) < len(p2):
-        p1.append(0)
-    while len(p2) < len(p1):
-        p2.append(0)
-    for a, b in zip(p1, p2):
-        if a > b:
-            return 1
-        if a < b:
-            return -1
+    """Сравнить версии в формате YYYYMMDD. Возвращает -1/0/1."""
+    n1 = int(v1) if v1.isdigit() else 0
+    n2 = int(v2) if v2.isdigit() else 0
+    if n1 > n2:
+        return 1
+    if n1 < n2:
+        return -1
     return 0
 
 

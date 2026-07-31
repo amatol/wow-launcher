@@ -14,8 +14,8 @@ class Config:
     WOW_EXE_NAMES = ["Dreamworld.exe", "Wow.exe", "wow.exe", "WoW.exe"]
     WOW_EXE = None
 
-    # Версия клиента (1.12, 3.3.5a и т.д.)
-    CLIENT_VERSION = "3.3.5a"
+    # Версия клиента (формат YYYYMMDD)
+    CLIENT_VERSION = "20260731"
 
     # Файл, в котором хранится текущая версия патча клиента
     VERSION_FILE = os.path.join(GAME_DIR, ".launcher_version")
@@ -42,8 +42,8 @@ class Config:
     TORRENT_TIMEOUT = 300
 
     # --- Самообновление лаунчера ---
-    # Версия самого лаунчера
-    LAUNCHER_VERSION = "1.0.0"
+    # Версия самого лаунчера (формат YYYYMMDD)
+    LAUNCHER_VERSION = "20260731"
 
     # URL манифеста обновлений лаунчера (JSON)
     LAUNCHER_MANIFEST_URL = "https://example.com/wow/launcher_manifest.json"

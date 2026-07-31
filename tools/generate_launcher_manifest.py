@@ -15,8 +15,8 @@ def main() -> None:
     parser.add_argument("--download-url", default="https://wotlk.amatol.blog/launcher/Dreamworld.exe")
     parser.add_argument("--changelog", default="")
     args = parser.parse_args()
-    if not (args.version.isdigit() and len(args.version) == 8):
-        parser.error("version должна иметь формат YYYYMMDD")
+    if not (args.version.isdigit() and len(args.version) in (8, 10)):
+        parser.error("version должна иметь формат YYYYMMDD или YYYYMMDDNN")
     content = args.executable.read_bytes()
     manifest = {
         "version": args.version,

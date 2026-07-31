@@ -1,7 +1,7 @@
 {
-  "version": "20260731",
+  "version": "2026073101",
   "download_url": "https://wotlk.amatol.blog/launcher/Dreamworld.exe",
   "size": 0,
   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "changelog": "Первая версия"
+  "changelog": "Новый горизонтальный интерфейс, новости сервера и точечное обновление файлов клиента"
 }

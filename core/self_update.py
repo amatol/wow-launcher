@@ -50,7 +50,7 @@ def is_update_available(manifest: dict) -> bool:
 
 
 def _compare_versions(v1: str, v2: str) -> int:
-    """Сравнить версии в формате YYYYMMDD. Возвращает -1/0/1."""
+    """Сравнить числовые версии YYYYMMDD[NN]. Возвращает -1/0/1."""
     n1 = int(v1) if v1.isdigit() else 0
     n2 = int(v2) if v2.isdigit() else 0
     if n1 > n2:

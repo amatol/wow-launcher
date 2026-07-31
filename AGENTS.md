@@ -147,6 +147,6 @@ assets/
 - **Иконка**: генерируется `generate_icon.py`, не хардкодится; Pillow не пишет ICO >256, поэтому PNG-в-ICO вручную через `struct`
 - **GUI**: тёмная тема `#0f0f23`, акцент `#e94560`, шрифт Segoe UI 18 bold
 - **Имена**: игровой клиент = `Wow.exe`, лаунчер = `Dreamworld.exe`
-- **Версии**: формат YYYYMMDD (например `20260731`), простое числовое сравнение
+- **Версии**: YYYYMMDDNN (например `2026073101`; NN — выпуск за день), числовое сравнение
 - **Manifest лаунчера**: `version`, `download_url`, `sha256`, `size`, `changelog`
 - **gh CLI**: авторизован как `amatol`, scope `workflow`, протокол HTTPS

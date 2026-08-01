@@ -27,6 +27,15 @@ class Config:
     # URL новостей сервера (JSON: список {title, date, body})
     NEWS_URL = f"{UPDATE_BASE_URL}/news.json"
 
+    # URL манифеста аддонов (JSON: список {name, version, url, sha256, ...})
+    ADDONS_MANIFEST_URL = f"{UPDATE_BASE_URL}/addons_manifest.json"
+
+    # Папка для аддонов внутри клиента WoW
+    ADDONS_DIR = os.path.join(GAME_DIR, "Interface", "AddOns")
+
+    # Файл с состояниями установленных аддонов
+    ADDONS_STATE_FILE = os.path.join(GAME_DIR, ".launcher_addons")
+
     # Таймаут HTTP-запросов (сек)
     HTTP_TIMEOUT = 30
 

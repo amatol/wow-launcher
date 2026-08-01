@@ -21,6 +21,7 @@ from core.self_update import (
 from updater.manifest import Manifest, filter_needed
 from updater.http_updater import HTTPUpdater
 from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
+from ui.addons_dialog import AddonsDialog
 
 
 class CheckWorker(QThread):
@@ -313,6 +314,7 @@ class MainWindow(QMainWindow):
 
         self.btn_addons = QPushButton("Аддоны")
         self.btn_addons.setFixedHeight(40)
+        self.btn_addons.clicked.connect(self.open_addons)
 
         self.btn_settings = QPushButton("Настройки")
         self.btn_settings.setFixedHeight(34)
@@ -436,6 +438,10 @@ class MainWindow(QMainWindow):
         self.progress_widget.set_status("Запуск WoW...", -1)
         launch_wow()
         self.close()
+
+    def open_addons(self):
+        dialog = AddonsDialog(self)
+        dialog.exec_()
 
     def open_settings(self):
         text, ok = QInputDialog.getText(

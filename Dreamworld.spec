@@ -19,6 +19,7 @@ a = Analysis(
         ('manifest.json', '.'),
         ('launcher_manifest.json', '.'),
         ('news.json', '.'),
+        ('addons_manifest.json', '.'),
     ],
     hiddenimports=[],
     hookspath=[],

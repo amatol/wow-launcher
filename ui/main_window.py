@@ -23,6 +23,21 @@ from updater.http_updater import HTTPUpdater
 from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
 
 
+class CheckWorker(QThread):
+    """Фоновая проверка наличия обновлений клиента при запуске."""
+
+    check_done = pyqtSignal(bool)  # True если есть обновления
+
+    def run(self):
+        try:
+            manifest = Manifest.fetch(Config.MANIFEST_URL)
+            needed = filter_needed(manifest, Config.get_current_version(), Config.GAME_DIR)
+            self.check_done.emit(len(needed) > 0)
+        except Exception:
+            # При ошибке сети — считаем что обновлений нет, даём играть
+            self.check_done.emit(False)
+
+
 class UpdateWorker(QThread):
     """Рабочий поток обновления."""
 
@@ -229,6 +244,7 @@ class MainWindow(QMainWindow):
         self.self_update_worker = None
         self.self_update_dialog = None
         self.news_worker = None
+        self.check_worker = None
 
         self._apply_dark_theme()
 
@@ -281,24 +297,31 @@ class MainWindow(QMainWindow):
             "QPushButton:pressed { background: #c81e3f; }"
             "QPushButton:disabled { background: #3a2a3a; color: #777; }"
         )
-        self.btn_play.clicked.connect(self.play)
-
-        self.btn_update = QPushButton("Обновить")
-        self.btn_update.setFixedHeight(40)
-        self.btn_update.clicked.connect(self.start_update)
+        self._play_mode = True
+        self.btn_play.clicked.connect(self._on_play_clicked)
 
         self.btn_cancel = QPushButton("Отмена")
-        self.btn_cancel.setFixedHeight(40)
+        self.btn_cancel.setFixedHeight(46)
+        self.btn_cancel.setStyleSheet(
+            "QPushButton { background: #e94560; border: none; border-radius: 5px; "
+            "font-size: 15px; font-weight: bold; color: white; }"
+            "QPushButton:hover { background: #ff5570; }"
+            "QPushButton:pressed { background: #c81e3f; }"
+        )
         self.btn_cancel.setVisible(False)
         self.btn_cancel.clicked.connect(self.cancel_update)
+
+        self.btn_addons = QPushButton("Аддоны")
+        self.btn_addons.setFixedHeight(40)
 
         self.btn_settings = QPushButton("Настройки")
         self.btn_settings.setFixedHeight(34)
         self.btn_settings.clicked.connect(self.open_settings)
 
         right_layout.addWidget(self.btn_play)
-        right_layout.addWidget(self.btn_update)
         right_layout.addWidget(self.btn_cancel)
+        right_layout.addSpacing(6)
+        right_layout.addWidget(self.btn_addons)
         right_layout.addStretch()
         right_layout.addWidget(self.btn_settings)
 
@@ -311,6 +334,7 @@ class MainWindow(QMainWindow):
 
         self._refresh_info()
         self._load_news()
+        self._start_client_check()
 
         # Фоновая проверка обновлений лаунчера (тихая)
         self._start_self_update_check()
@@ -345,14 +369,41 @@ class MainWindow(QMainWindow):
     def _on_news_loaded(self, news_list):
         self.news_widget.set_news(news_list)
 
+    def _start_client_check(self):
+        """Фоновая проверка обновлений клиента при запуске."""
+        self.btn_play.setEnabled(False)
+        self.progress_widget.set_status("Проверка обновлений...", 0)
+        self.check_worker = CheckWorker()
+        self.check_worker.check_done.connect(self._on_check_done)
+        self.check_worker.start()
+
+    def _on_check_done(self, has_updates: bool):
+        if has_updates:
+            self._set_play_mode(False)
+            self.progress_widget.set_status("Доступно обновление клиента", -1)
+        else:
+            self._set_play_mode(True)
+            self.progress_widget.set_status("Готово", -1)
+
+    def _set_play_mode(self, is_play: bool):
+        """Переключить кнопку между «Играть» и «Обновить»."""
+        self._play_mode = is_play
+        self.btn_play.setText("Играть" if is_play else "Обновить")
+        self.btn_play.setEnabled(True)
+
+    def _on_play_clicked(self):
+        if self._play_mode:
+            self.play()
+        else:
+            self.start_update()
+
     def start_update(self):
         if self.worker and self.worker.isRunning():
             return
         self.progress_widget.reset()
         self.progress_widget.set_status("Проверка файлов...", 0)
-        self.btn_update.setVisible(False)
+        self.btn_play.setVisible(False)
         self.btn_cancel.setVisible(True)
-        self.btn_play.setEnabled(False)
 
         self.worker = UpdateWorker(Config.GAME_DIR, Config.MANIFEST_URL)
         self.worker.log_signal.connect(self._on_log_msg)
@@ -373,9 +424,9 @@ class MainWindow(QMainWindow):
         self.progress_widget.set_status(
             message, 100 if success else 0
         )
-        self.btn_update.setVisible(True)
+        self.btn_play.setVisible(True)
         self.btn_cancel.setVisible(False)
-        self.btn_play.setEnabled(True)
+        self._set_play_mode(success)
         self._refresh_info()
 
     def play(self):

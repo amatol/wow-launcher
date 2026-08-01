@@ -272,15 +272,6 @@ class MainWindow(QMainWindow):
         right_layout.setContentsMargins(12, 12, 12, 12)
         right_layout.setSpacing(10)
 
-        self.btn_update = QPushButton("Обновить")
-        self.btn_update.setFixedHeight(40)
-        self.btn_update.clicked.connect(self.start_update)
-
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_cancel.setFixedHeight(40)
-        self.btn_cancel.setEnabled(False)
-        self.btn_cancel.clicked.connect(self.cancel_update)
-
         self.btn_play = QPushButton("Играть")
         self.btn_play.setFixedHeight(46)
         self.btn_play.setStyleSheet(
@@ -292,14 +283,22 @@ class MainWindow(QMainWindow):
         )
         self.btn_play.clicked.connect(self.play)
 
+        self.btn_update = QPushButton("Обновить")
+        self.btn_update.setFixedHeight(40)
+        self.btn_update.clicked.connect(self.start_update)
+
+        self.btn_cancel = QPushButton("Отмена")
+        self.btn_cancel.setFixedHeight(40)
+        self.btn_cancel.setVisible(False)
+        self.btn_cancel.clicked.connect(self.cancel_update)
+
         self.btn_settings = QPushButton("Настройки")
         self.btn_settings.setFixedHeight(34)
         self.btn_settings.clicked.connect(self.open_settings)
 
+        right_layout.addWidget(self.btn_play)
         right_layout.addWidget(self.btn_update)
         right_layout.addWidget(self.btn_cancel)
-        right_layout.addSpacing(6)
-        right_layout.addWidget(self.btn_play)
         right_layout.addStretch()
         right_layout.addWidget(self.btn_settings)
 
@@ -351,8 +350,8 @@ class MainWindow(QMainWindow):
             return
         self.progress_widget.reset()
         self.progress_widget.set_status("Проверка файлов...", 0)
-        self.btn_update.setEnabled(False)
-        self.btn_cancel.setEnabled(True)
+        self.btn_update.setVisible(False)
+        self.btn_cancel.setVisible(True)
         self.btn_play.setEnabled(False)
 
         self.worker = UpdateWorker(Config.GAME_DIR, Config.MANIFEST_URL)
@@ -374,8 +373,8 @@ class MainWindow(QMainWindow):
         self.progress_widget.set_status(
             message, 100 if success else 0
         )
-        self.btn_update.setEnabled(True)
-        self.btn_cancel.setEnabled(False)
+        self.btn_update.setVisible(True)
+        self.btn_cancel.setVisible(False)
         self.btn_play.setEnabled(True)
         self._refresh_info()
 

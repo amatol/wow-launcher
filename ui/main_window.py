@@ -437,7 +437,7 @@ class MainWindow(QMainWindow):
 
         ok = apply_update(path)
         if ok:
-            # Завершаем текущий процесс — bat-скрипт заменит .exe и перезапустит
+            # apply_update уже запустил новый .exe и переименовал старый в .old
             QApplication.quit()
         else:
             self.progress_widget.set_status("Не удалось применить обновление.", -1)

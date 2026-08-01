@@ -3,6 +3,8 @@ BitTorrent фолбэк-обновление через libtorrent.
 Качает торренты для файлов из манифеста, у которых есть torrent_url.
 """
 import os
+import shutil
+import tempfile
 import time
 from typing import Callable, List, Optional
 
@@ -24,6 +26,7 @@ class TorrentUpdater:
         self.manifest = manifest
         self.progress_cb = progress_cb or (lambda *a: None)
         self._cancel = False
+        self._tmp_dir = None
 
         if not HAS_LIBTORRENT:
             raise RuntimeError(
@@ -35,6 +38,19 @@ class TorrentUpdater:
 
     def cancel(self):
         self._cancel = True
+
+    def _get_tmp_dir(self) -> str:
+        if self._tmp_dir is None:
+            self._tmp_dir = tempfile.mkdtemp(prefix="dreamworld_torrent_")
+        return self._tmp_dir
+
+    def cleanup(self):
+        if self._tmp_dir and os.path.isdir(self._tmp_dir):
+            try:
+                shutil.rmtree(self._tmp_dir)
+            except Exception:
+                pass
+            self._tmp_dir = None
 
     def _add_torrent(self, torrent_url: str, save_path: str):
         """Добавить торрент по URL .torrent-файла."""
@@ -92,7 +108,7 @@ class TorrentUpdater:
         return True
 
     def apply_all(self, files: List[FileEntry]) -> tuple:
-        Config.ensure_temp_dir()
+        tmp_dir = self._get_tmp_dir()
         total = len(files)
         success = 0
 
@@ -101,27 +117,24 @@ class TorrentUpdater:
                 break
             self.progress_cb(i, total, 0, entry.size, f"({i+1}/{total}) torrent {entry.path}")
 
-            # Качаем во временную папку, потом перемещаем
-            if self.download_file(entry, Config.TEMP_DIR):
-                # libtorrent сохраняет под именем из торрента — найдём скачанный файл
-                downloaded = self._find_downloaded(entry)
+            if self.download_file(entry, tmp_dir):
+                downloaded = self._find_downloaded(entry, tmp_dir)
                 if downloaded:
                     dest = os.path.join(self.game_dir, entry.path)
                     os.makedirs(os.path.dirname(dest), exist_ok=True)
-                    import shutil
                     shutil.move(downloaded, dest)
                     success += 1
 
+        self.cleanup()
         return (success == total and not self._cancel, success)
 
-    def _find_downloaded(self, entry: FileEntry) -> Optional[str]:
+    def _find_downloaded(self, entry: FileEntry, tmp_dir: str) -> Optional[str]:
         """Найти скачанный файл во временной папке по имени из пути."""
         filename = os.path.basename(entry.path)
-        candidate = os.path.join(Config.TEMP_DIR, filename)
+        candidate = os.path.join(tmp_dir, filename)
         if os.path.isfile(candidate):
             return candidate
-        # Поиск рекурсивно
-        for root, _dirs, files in os.walk(Config.TEMP_DIR):
+        for root, _dirs, files in os.walk(tmp_dir):
             for f in files:
                 if f == filename:
                     return os.path.join(root, f)

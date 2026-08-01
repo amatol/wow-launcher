@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
 from config import Config
+from core.self_update import cleanup_self_update_files
 from ui.main_window import MainWindow
 
 
@@ -23,8 +24,8 @@ def main():
     if os.path.isfile(icon_path):
         app.setWindowIcon(QIcon(icon_path))
 
-    # Убедимся, что папка-конфиг существует
-    Config.ensure_temp_dir()
+    # Очистка мусора от прошлых обновлений
+    cleanup_self_update_files()
 
     window = MainWindow()
     window.show()

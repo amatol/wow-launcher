@@ -1,21 +1,21 @@
 """
 Самообновление лаунчера.
 
-Схема:
+Схема (rename-then-replace, без bat-скрипта):
 1. Фоновый поток качает launcher_manifest.json
 2. Сравнивает version с Config.LAUNCHER_VERSION
 3. Если новее — сигнал в GUI, пользователю показывается диалог
-4. При согласии — качается Dreamworld.exe.new
-5. Создаётся .bat скрипт, который:
-   - ждёт завершения текущего процесса
-   - заменяет Dreamworld.exe -> Dreamworld.exe.new
-   - удаляет .new и .bat
-   - перезапускает Dreamworld.exe
-6. Текущий процесс завершается
+4. При согласии — качается Dreamworld.exe.new в %TEMP%
+5. Проверяется SHA-256 и размер
+6. Текущий Dreamworld.exe переименовывается в Dreamworld.exe.old
+7. Новый файл ставится на место Dreamworld.exe
+8. Лаунчер перезапускается
+9. При следующем запуске .old удаляется (cleanup_self_update_files)
 """
 import hashlib
 import os
 import sys
+import tempfile
 from typing import Callable, Optional, Tuple
 
 import requests
@@ -71,7 +71,7 @@ def _compare_versions(v1: str, v2: str) -> int:
 
 def download_update(manifest: dict, progress_cb: ProgressCallback = None) -> Tuple[bool, str]:
     """
-    Скачать новый .exe во временную папку.
+    Скачать новый .exe во временную папку (системный %TEMP%).
     Возвращает (успех, путь_к_скачанному_файлу).
     """
     download_url = manifest.get("download_url")
@@ -81,8 +81,8 @@ def download_update(manifest: dict, progress_cb: ProgressCallback = None) -> Tup
     expected_sha256 = manifest.get("sha256", "")
     expected_size = manifest.get("size", 0)
 
-    Config.ensure_temp_dir()
-    tmp_path = os.path.join(Config.TEMP_DIR, Config.LAUNCHER_EXE_NAME + ".new")
+    tmp_dir = tempfile.mkdtemp(prefix="dreamworld_update_")
+    tmp_path = os.path.join(tmp_dir, Config.LAUNCHER_EXE_NAME + ".new")
 
     try:
         resp = requests.get(download_url, stream=True, timeout=Config.HTTP_TIMEOUT)
@@ -101,26 +101,25 @@ def download_update(manifest: dict, progress_cb: ProgressCallback = None) -> Tup
                     if progress_cb:
                         progress_cb(downloaded, total, "Downloading launcher update...")
 
-        # Проверка хэша
         if expected_size and downloaded != expected_size:
-            os.remove(tmp_path)
+            _cleanup_dir(tmp_dir)
             return False, ""
         if expected_sha256 and h.hexdigest().lower() != expected_sha256.lower():
-            os.remove(tmp_path)
+            _cleanup_dir(tmp_dir)
             return False, ""
 
         return True, tmp_path
 
     except Exception:
-        if os.path.isfile(tmp_path):
-            os.remove(tmp_path)
+        _cleanup_dir(tmp_dir)
         return False, ""
 
 
 def apply_update(new_exe_path: str) -> bool:
     """
-    Создать bat-скрипт для замены .exe и перезапуска.
-    Запускает bat и возвращает True (текущий процесс должен завершиться).
+    Rename-then-replace: переименовать текущий .exe в .old,
+    поставить новый на его место, перезапустить.
+    .old будет удалён при следующем запуске (cleanup_self_update_files).
     """
     if not os.path.isfile(new_exe_path):
         return False
@@ -133,50 +132,42 @@ def apply_update(new_exe_path: str) -> bool:
     new_exe_path = os.path.abspath(new_exe_path)
     exe_dir = os.path.dirname(current_exe)
     exe_name = os.path.basename(current_exe)
-    expected_new = os.path.abspath(
-        os.path.join(Config.TEMP_DIR, Config.LAUNCHER_EXE_NAME + ".new")
-    )
 
-    # Самообновление имеет право заменить ровно один известный файл. Любое
-    # отличие пути считается ошибкой и не передаётся командному интерпретатору.
     if exe_name.lower() != Config.LAUNCHER_EXE_NAME.lower():
         return False
-    if os.path.normcase(new_exe_path) != os.path.normcase(expected_new):
-        return False
-    if os.path.dirname(exe_dir) == exe_dir:
-        return False
-    if any(char in current_exe + new_exe_path for char in ('%', '!', '"', '\r', '\n')):
-        return False
 
-    bat_path = os.path.join(exe_dir, ".dreamworld_updater.bat")
-    log_path = os.path.join(exe_dir, ".dreamworld_updater.log")
-
-    bat_content = _build_updater_script(
-        current_exe=current_exe,
-        new_exe_path=new_exe_path,
-        log_path=log_path,
-        pid=os.getpid(),
-    )
+    old_path = current_exe + ".old"
 
     try:
-        with open(bat_path, "w", encoding="utf-8") as f:
-            f.write(bat_content)
+        # Удалить прошлый .old, если остался
+        if os.path.isfile(old_path):
+            os.remove(old_path)
+
+        # Переименовать текущий .exe в .old
+        os.rename(current_exe, old_path)
+
+        # Поставить новый на место
+        shutil_move(new_exe_path, current_exe)
+
+        # Очистить временную папку
+        tmp_dir = os.path.dirname(new_exe_path)
+        _cleanup_dir(tmp_dir)
+
     except Exception:
+        # Попытаться откатить
+        if os.path.isfile(old_path) and not os.path.isfile(current_exe):
+            try:
+                os.rename(old_path, current_exe)
+            except Exception:
+                pass
         return False
 
-    # Сброс заставляет новый PyInstaller one-file процесс распаковать
-    # собственный runtime, а не использовать удаляемый каталог старого процесса.
-    env = os.environ.copy()
-    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
-    env.pop("_PYI_APPLICATION_HOME_DIR", None)
-    env.pop("_MEIPASS2", None)
-
+    # Перезапустить
     import subprocess
     try:
         subprocess.Popen(
-            ["cmd.exe", "/d", "/c", bat_path],
+            [current_exe],
             cwd=exe_dir,
-            env=env,
             creationflags=(
                 subprocess.CREATE_NEW_PROCESS_GROUP
                 | getattr(subprocess, "DETACHED_PROCESS", 0)
@@ -184,39 +175,73 @@ def apply_update(new_exe_path: str) -> bool:
         )
     except Exception:
         return False
+
     return True
 
 
-def _build_updater_script(current_exe: str, new_exe_path: str, log_path: str, pid: int) -> str:
-    """Создать BAT без команд удаления и без доступа к файлам клиента."""
-    return f"""@echo off
-setlocal DisableDelayedExpansion
-chcp 65001 >nul 2>&1
-set "EXE={current_exe}"
-set "NEW={new_exe_path}"
-set "LOG={log_path}"
-set "PYINSTALLER_RESET_ENVIRONMENT=1"
-set "_PYI_APPLICATION_HOME_DIR="
-set "_MEIPASS2="
+def cleanup_self_update_files():
+    """
+    Удалить мусор от прошлых обновлений: .old, .new, .dreamworld_updater.bat,
+    .dreamworld_updater.log, старую папку .launcher_tmp.
+    """
+    game_dir = Config.GAME_DIR
+    exe_name = Config.LAUNCHER_EXE_NAME
 
-echo [%date% %time%] Ожидание завершения PID {pid}.>"%LOG%"
+    patterns = [
+        exe_name + ".old",
+        ".dreamworld_updater.bat",
+        ".dreamworld_updater.log",
+    ]
 
-:wait
-tasklist /fi "pid eq {pid}" 2>nul | find "{pid}" >nul
-if not errorlevel 1 (
-    timeout /t 1 /nobreak >nul
-    goto wait
-)
+    for name in patterns:
+        path = os.path.join(game_dir, name)
+        try:
+            if os.path.isfile(path):
+                os.remove(path)
+        except Exception:
+            pass
 
-echo [%date% %time%] Замена только Dreamworld.exe.>>"%LOG%"
-move /y "%NEW%" "%EXE%" >>"%LOG%" 2>&1
-if errorlevel 1 (
-    echo [%date% %time%] ОШИБКА: замена не выполнена.>>"%LOG%"
-    exit /b 1
-)
+    # Старая папка .launcher_tmp (если осталась от прежних версий)
+    old_tmp = os.path.join(game_dir, ".launcher_tmp")
+    if os.path.isdir(old_tmp):
+        try:
+            import shutil
+            shutil.rmtree(old_tmp)
+        except Exception:
+            pass
 
-echo [%date% %time%] Запуск обновлённого лаунчера.>>"%LOG%"
-start "" "%EXE%"
-if errorlevel 1 echo [%date% %time%] ОШИБКА: запуск не выполнен.>>"%LOG%"
-endlocal
-"""
+    # Забытые .new в системном temp
+    try:
+        tmp_root = tempfile.gettempdir()
+        for entry in os.listdir(tmp_root):
+            if entry.startswith("dreamworld_update_") or entry.startswith("dreamworld_"):
+                full = os.path.join(tmp_root, entry)
+                try:
+                    if os.path.isdir(full):
+                        import shutil
+                        shutil.rmtree(full)
+                    elif os.path.isfile(full):
+                        os.remove(full)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
+def _cleanup_dir(dir_path: str):
+    """Удалить временную папку и всё её содержимое."""
+    try:
+        import shutil
+        shutil.rmtree(dir_path)
+    except Exception:
+        pass
+
+
+def shutil_move(src: str, dst: str):
+    """Переместить файл, с fallback на копирование+удаление."""
+    import shutil
+    try:
+        shutil.move(src, dst)
+    except Exception:
+        shutil.copy2(src, dst)
+        os.remove(src)

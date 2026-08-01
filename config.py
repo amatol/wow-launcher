@@ -33,9 +33,6 @@ class Config:
     # Размер чанка при скачивании (байт)
     DOWNLOAD_CHUNK = 65536
 
-    # Папка для временных файлов скачивания
-    TEMP_DIR = os.path.join(GAME_DIR, ".launcher_tmp")
-
     # Пытаться ли BitTorrent, если HTTP недоступен
     TORRENT_FALLBACK = True
 
@@ -81,4 +78,5 @@ class Config:
 
     @classmethod
     def ensure_temp_dir(cls):
-        os.makedirs(cls.TEMP_DIR, exist_ok=True)
+        import tempfile
+        return tempfile.mkdtemp(prefix="dreamworld_")

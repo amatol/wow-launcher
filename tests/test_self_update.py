@@ -1,13 +1,9 @@
 import os
-import shutil
-import subprocess
 import sys
 import tempfile
-import time
 import unittest
-from pathlib import Path
 
-from core.self_update import _build_updater_script, _compare_versions
+from core.self_update import _compare_versions, cleanup_self_update_files
 
 
 class SelfUpdateTests(unittest.TestCase):
@@ -20,67 +16,41 @@ class SelfUpdateTests(unittest.TestCase):
     def test_bridge_manifest_matches_embedded_daily_version(self):
         self.assertEqual(_compare_versions("2026080200", "20260802"), 0)
 
-    def test_updater_script_only_moves_launcher_and_never_deletes(self):
-        script = _build_updater_script(
-            current_exe=r"C:\Games\WoW\Dreamworld.exe",
-            new_exe_path=r"C:\Games\WoW\.launcher_tmp\Dreamworld.exe.new",
-            log_path=r"C:\Games\WoW\.dreamworld_updater.log",
-            pid=1234,
-        )
+    def test_cleanup_removes_old_and_bat_and_log(self):
+        with tempfile.TemporaryDirectory() as game_dir:
+            old_exe = os.path.join(game_dir, "Dreamworld.exe.old")
+            bat = os.path.join(game_dir, ".dreamworld_updater.bat")
+            log = os.path.join(game_dir, ".dreamworld_updater.log")
 
-        self.assertIn(
-            'move /y "%NEW%" "%EXE%"',
-            script,
-        )
-        self.assertIn('set "PYINSTALLER_RESET_ENVIRONMENT=1"', script)
-        self.assertIn('set "_PYI_APPLICATION_HOME_DIR="', script)
-        self.assertNotIn("\ndel ", script.lower())
-        self.assertNotIn("*", script)
-        self.assertNotIn("rmdir", script.lower())
-        self.assertNotIn("rd /", script.lower())
+            for p in (old_exe, bat, log):
+                with open(p, "w") as f:
+                    f.write("test")
 
-    @unittest.skipUnless(sys.platform == "win32", "интеграционный тест Windows BAT")
-    def test_windows_script_preserves_unrelated_client_files(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            current = root / "Dreamworld.exe"
-            update_dir = root / ".launcher_tmp"
-            update_dir.mkdir()
-            new = update_dir / "Dreamworld.exe.new"
-            log = root / ".dreamworld_updater.log"
-            sentinel = root / "Wow.exe"
-            data_file = root / "Data" / "client-data.bin"
-            data_file.parent.mkdir()
+            from config import Config
+            orig_game_dir = Config.GAME_DIR
+            Config.GAME_DIR = game_dir
+            try:
+                cleanup_self_update_files()
+                for p in (old_exe, bat, log):
+                    self.assertFalse(os.path.isfile(p), f"{p} should be removed")
+            finally:
+                Config.GAME_DIR = orig_game_dir
 
-            shutil.copy2(Path(os.environ["WINDIR"]) / "System32" / "where.exe", current)
-            shutil.copy2(Path(os.environ["WINDIR"]) / "System32" / "whoami.exe", new)
-            expected = new.read_bytes()
-            sentinel.write_bytes(b"wow-client-sentinel")
-            data_file.write_bytes(b"client-data-sentinel")
+    def test_cleanup_removes_old_launcher_tmp(self):
+        with tempfile.TemporaryDirectory() as game_dir:
+            tmp = os.path.join(game_dir, ".launcher_tmp")
+            os.makedirs(tmp)
+            with open(os.path.join(tmp, "junk.part"), "w") as f:
+                f.write("x")
 
-            finished = subprocess.Popen(["cmd.exe", "/d", "/c", "exit", "0"])
-            finished.wait(timeout=10)
-            script = _build_updater_script(
-                str(current), str(new), str(log), finished.pid
-            )
-            bat = root / ".dreamworld_updater.bat"
-            bat.write_text(script, encoding="utf-8")
-
-            subprocess.run(
-                ["cmd.exe", "/d", "/c", str(bat)],
-                cwd=root,
-                check=True,
-                timeout=30,
-            )
-
-            self.assertEqual(current.read_bytes(), expected)
-            self.assertFalse(new.exists())
-            self.assertEqual(sentinel.read_bytes(), b"wow-client-sentinel")
-            self.assertEqual(data_file.read_bytes(), b"client-data-sentinel")
-            self.assertTrue(bat.exists())
-            # START асинхронный; дать короткоживущему whoami.exe завершиться,
-            # прежде чем TemporaryDirectory удалит тестовый каталог.
-            time.sleep(1)
+            from config import Config
+            orig_game_dir = Config.GAME_DIR
+            Config.GAME_DIR = game_dir
+            try:
+                cleanup_self_update_files()
+                self.assertFalse(os.path.isdir(tmp), ".launcher_tmp should be removed")
+            finally:
+                Config.GAME_DIR = orig_game_dir
 
 
 if __name__ == "__main__":

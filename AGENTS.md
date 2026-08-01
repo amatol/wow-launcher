@@ -51,7 +51,7 @@
 - `gh` CLI установлен через Homebrew, авторизован с scope `workflow`
 - ICO > 256px: Pillow не поддерживает, упаковка PNG-в-ICO вручную в `generate_icon.py`
 - Manifest лаунчера: отдельный `launcher_manifest.json` (не `manifest.json` клиента)
-- bat-скрипт `.dreamworld_updater.bat` для замены запущенного .exe
+- Самообновление лаунчера: rename-then-replace (без bat-скрипта), отложенная очистка при следующем запуске
 
 **Состояние:**
 - Все задачи выполнены, CI зелёный
@@ -98,7 +98,7 @@ generate_icon.py        — генерация dreamworld.ico (D, золото, 
 Dreamworld.spec         — PyInstaller spec (onefile, windowed, icon)
 core/
   version.py            — поиск/запуск Dreamworld.exe, версии патча
-  self_update.py        — фоновая проверка, скачивание, bat-замена
+  self_update.py        — фоновая проверка, скачивание, rename-then-replace, очистка
 updater/
   manifest.py           — парсинг JSON-манифеста, SHA-256 проверка
   http_updater.py       — HTTP-скачивание + бэкап .bak
@@ -125,12 +125,13 @@ assets/
 
 ### Самообновление лаунчера
 1. Фоновый поток `SelfUpdateWorker` качает `launcher_manifest.json`
-2. Сравнивает semver с `Config.LAUNCHER_VERSION`
+2. Сравнивает version с `Config.LAUNCHER_VERSION`
 3. Нет обновления / ошибка сети → **тихо, без UI**
 4. Есть обновление → `SelfUpdateDialog` («Обновить» / «Позже»)
-5. При согласии → скачивание `Dreamworld.exe.new` → SHA-256 проверка
-6. Создаёт `.dreamworld_updater.bat` (ждёт PID, заменяет .exe, перезапускает)
-7. Текущий процесс завершается → bat дорабатывает
+5. При согласии → скачивание в `%TEMP%` → проверка SHA-256 и размера
+6. Rename-then-replace: текущий `Dreamworld.exe` → `Dreamworld.exe.old`,
+   новый ставится на его место, запускается новый процесс
+7. При следующем запуске `cleanup_self_update_files` удаляет `.old` и прочий мусор
 
 ### Сборка .exe
 1. Пуш в main → GitHub Actions `build.yml`

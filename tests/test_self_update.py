@@ -11,9 +11,14 @@ from core.self_update import _build_updater_script, _compare_versions
 
 
 class SelfUpdateTests(unittest.TestCase):
-    def test_new_daily_release_is_newer(self):
-        self.assertGreater(_compare_versions("2026080101", "20260731"), 0)
-        self.assertGreater(_compare_versions("2026080101", "2026073101"), 0)
+    def test_daily_release_is_newer_than_previous_day(self):
+        self.assertGreater(_compare_versions("20260802", "20260801"), 0)
+
+    def test_daily_release_migrates_from_legacy_ten_digit_version(self):
+        self.assertGreater(_compare_versions("20260802", "2026080101"), 0)
+
+    def test_bridge_manifest_matches_embedded_daily_version(self):
+        self.assertEqual(_compare_versions("2026080200", "20260802"), 0)
 
     def test_updater_script_only_moves_launcher_and_never_deletes(self):
         script = _build_updater_script(

@@ -12,14 +12,24 @@ def main() -> None:
     parser.add_argument("executable", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--version", required=True)
+    parser.add_argument(
+        "--legacy-sequence",
+        choices=range(100),
+        type=int,
+        metavar="NN",
+        help="добавить прежний суффикс NN только для переходного манифеста",
+    )
     parser.add_argument("--download-url", default="https://wotlk.amatol.blog/launcher/Dreamworld.exe")
     parser.add_argument("--changelog", default="")
     args = parser.parse_args()
-    if not (args.version.isdigit() and len(args.version) in (8, 10)):
-        parser.error("version должна иметь формат YYYYMMDD или YYYYMMDDNN")
+    if not (args.version.isdigit() and len(args.version) == 8):
+        parser.error("version должна иметь формат YYYYMMDD")
+    manifest_version = args.version
+    if args.legacy_sequence is not None:
+        manifest_version += f"{args.legacy_sequence:02d}"
     content = args.executable.read_bytes()
     manifest = {
-        "version": args.version,
+        "version": manifest_version,
         "download_url": args.download_url,
         "size": len(content),
         "sha256": hashlib.sha256(content).hexdigest(),

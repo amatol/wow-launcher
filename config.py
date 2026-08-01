@@ -46,8 +46,8 @@ class Config:
     TORRENT_TIMEOUT = 300
 
     # --- Самообновление лаунчера ---
-    # Версия самого лаунчера (формат YYYYMMDDNN)
-    LAUNCHER_VERSION = "2026080101"
+    # Версия самого лаунчера (формат YYYYMMDD)
+    LAUNCHER_VERSION = "20260802"
 
     # URL манифеста обновлений лаунчера (JSON)
     LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"

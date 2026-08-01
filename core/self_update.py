@@ -50,9 +50,18 @@ def is_update_available(manifest: dict) -> bool:
 
 
 def _compare_versions(v1: str, v2: str) -> int:
-    """Сравнить числовые версии YYYYMMDD[NN]. Возвращает -1/0/1."""
-    n1 = int(v1) if v1.isdigit() else 0
-    n2 = int(v2) if v2.isdigit() else 0
+    """Сравнить числовые версии YYYYMMDD. Возвращает -1/0/1.
+
+    Десятизначные версии прежней схемы также принимаются, чтобы выпущенный
+    лаунчер 2026080101 смог перейти на первый восьмизначный релиз 20260802.
+    """
+    def normalize(version: str) -> int:
+        if not version.isdigit() or len(version) not in (8, 10):
+            return 0
+        return int(version[:8])
+
+    n1 = normalize(v1)
+    n2 = normalize(v2)
     if n1 > n2:
         return 1
     if n1 < n2:

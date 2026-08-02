@@ -27,6 +27,7 @@ class AddonEntry:
     name: str
     version: str
     description: str = ""
+    folders: List[str] = field(default_factory=list)
     files: List[AddonFile] = field(default_factory=list)
     size: int = 0
 
@@ -50,17 +51,29 @@ def _safe_relative_path(value: str) -> bool:
 def _validate_entry(entry: AddonEntry) -> AddonEntry:
     if not _SAFE_NAME.fullmatch(entry.name):
         raise ValueError("invalid addon name")
-    if not entry.version or not entry.files:
-        raise ValueError("addon version and files are required")
+    if not entry.version or not entry.folders or not entry.files:
+        raise ValueError("addon version, folders and files are required")
+    folder_keys = [folder.casefold() for folder in entry.folders]
+    if len(set(folder_keys)) != len(folder_keys) or any(not _SAFE_NAME.fullmatch(folder) for folder in entry.folders):
+        raise ValueError("invalid or duplicate addon folder")
     seen = set()
+    toc_folders = set()
     for item in entry.files:
-        if not _safe_relative_path(item.path) or item.path in seen:
+        path_key = item.path.casefold()
+        if not _safe_relative_path(item.path) or path_key in seen:
             raise ValueError("invalid or duplicate addon file path")
         if not item.download_url or item.size < 0:
             raise ValueError("addon file URL and non-negative size are required")
         if not re.fullmatch(r"[0-9a-f]{64}", item.sha256):
             raise ValueError("addon file sha256 must contain 64 lowercase hex characters")
-        seen.add(item.path)
+        parts = PurePosixPath(item.path).parts
+        if not parts or parts[0].casefold() not in folder_keys:
+            raise ValueError("addon file is outside declared folders")
+        if len(parts) == 2 and parts[1].lower().endswith(".toc"):
+            toc_folders.add(parts[0].casefold())
+        seen.add(path_key)
+    if toc_folders != set(folder_keys):
+        raise ValueError("each addon folder must have a top-level .toc file")
     entry.size = sum(item.size for item in entry.files)
     return entry
 
@@ -78,6 +91,8 @@ def fetch_addons_manifest(url: str = None) -> Optional[List[AddonEntry]]:
             else:
                 return None
         result = []
+        claimed_folders = set()
+        claimed_names = set()
         for addon in data:
             files = [AddonFile(
                 path=str(item.get("path", "")),
@@ -89,8 +104,18 @@ def fetch_addons_manifest(url: str = None) -> Optional[List[AddonEntry]]:
                 name=str(addon.get("name", "")),
                 version=str(addon.get("version", "")),
                 description=str(addon.get("description", "")),
+                folders=[str(folder) for folder in addon.get("folders", [])],
                 files=files,
             )))
+            name_key = result[-1].name.casefold()
+            folder_keys = {folder.casefold() for folder in result[-1].folders}
+            overlap = claimed_folders.intersection(folder_keys)
+            if name_key in claimed_names:
+                raise ValueError("duplicate addon package name")
+            if overlap:
+                raise ValueError("addon folders are claimed by multiple packages")
+            claimed_names.add(name_key)
+            claimed_folders.update(folder_keys)
         return result
     except Exception:
         return None
@@ -116,26 +141,30 @@ def save_addons_state(state: dict):
 
 
 def get_installed_version(name: str) -> Optional[str]:
-    return load_addons_state().get(name)
+    value = load_addons_state().get(name)
+    if isinstance(value, dict):
+        return value.get("version")
+    return value if isinstance(value, str) else None
 
 
-def is_addon_installed(name: str) -> bool:
-    return os.path.isdir(os.path.join(Config.ADDONS_DIR, name))
+def is_addon_installed(entry: AddonEntry) -> bool:
+    return all(os.path.isdir(os.path.join(Config.ADDONS_DIR, folder)) for folder in entry.folders)
 
 
 def needs_update(entry: AddonEntry) -> bool:
     installed = get_installed_version(entry.name)
-    return not installed or not is_addon_installed(entry.name) or installed != entry.version
+    return not installed or not is_addon_installed(entry) or installed != entry.version
 
 
 def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bool:
     """Скачать проверенные файлы каталога и атомарно установить аддон."""
-    tmp_dir = tempfile.mkdtemp(prefix="dreamworld_addon_")
-    staged_path = os.path.join(tmp_dir, entry.name)
+    os.makedirs(Config.ADDONS_DIR, exist_ok=True)
+    tmp_dir = tempfile.mkdtemp(prefix=".dreamworld_addon_", dir=Config.ADDONS_DIR)
+    staged_root = os.path.join(tmp_dir, "staged")
     try:
         downloaded_total = 0
         for item in entry.files:
-            target = os.path.join(staged_path, *PurePosixPath(item.path).parts)
+            target = os.path.join(staged_root, *PurePosixPath(item.path).parts)
             os.makedirs(os.path.dirname(target), exist_ok=True)
             progress_cb and progress_cb(downloaded_total, entry.size, f"Скачивание {entry.name}...")
             resp = requests.get(item.download_url, stream=True, timeout=Config.HTTP_TIMEOUT)
@@ -154,21 +183,39 @@ def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bo
             downloaded_total += downloaded
 
         progress_cb and progress_cb(0, 0, f"Установка {entry.name}...")
-        os.makedirs(Config.ADDONS_DIR, exist_ok=True)
-        addon_path = os.path.join(Config.ADDONS_DIR, entry.name)
-        backup_path = os.path.join(tmp_dir, "previous")
-        if os.path.isdir(addon_path):
-            os.replace(addon_path, backup_path)
+        state = load_addons_state()
+        previous = state.get(entry.name)
+        old_folders = previous.get("folders", []) if isinstance(previous, dict) else [entry.name]
+        affected_folders = sorted(set(old_folders).union(entry.folders))
+        backup_root = os.path.join(tmp_dir, "previous")
+        os.makedirs(backup_root, exist_ok=True)
+        moved_old = []
+        moved_new = []
         try:
-            os.replace(staged_path, addon_path)
+            for folder in affected_folders:
+                current = os.path.join(Config.ADDONS_DIR, folder)
+                if os.path.isdir(current):
+                    os.replace(current, os.path.join(backup_root, folder))
+                    moved_old.append(folder)
+            for folder in entry.folders:
+                staged = os.path.join(staged_root, folder)
+                if not os.path.isdir(staged):
+                    raise ValueError("missing staged addon folder")
+                os.replace(staged, os.path.join(Config.ADDONS_DIR, folder))
+                moved_new.append(folder)
+            state[entry.name] = {"version": entry.version, "folders": entry.folders}
+            save_addons_state(state)
         except Exception:
-            if os.path.isdir(backup_path) and not os.path.exists(addon_path):
-                os.replace(backup_path, addon_path)
+            for folder in moved_new:
+                installed = os.path.join(Config.ADDONS_DIR, folder)
+                if os.path.isdir(installed):
+                    shutil.rmtree(installed, ignore_errors=True)
+            for folder in moved_old:
+                backup = os.path.join(backup_root, folder)
+                if os.path.isdir(backup):
+                    os.replace(backup, os.path.join(Config.ADDONS_DIR, folder))
             raise
 
-        state = load_addons_state()
-        state[entry.name] = entry.version
-        save_addons_state(state)
         progress_cb and progress_cb(0, 0, f"OK: {entry.name}")
         return True
     except Exception:
@@ -178,10 +225,13 @@ def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bo
 
 
 def uninstall_addon(name: str):
-    addon_path = os.path.join(Config.ADDONS_DIR, name)
-    if os.path.isdir(addon_path):
-        shutil.rmtree(addon_path, ignore_errors=True)
     state = load_addons_state()
+    installed = state.get(name)
+    folders = installed.get("folders", []) if isinstance(installed, dict) else [name]
+    for folder in folders:
+        addon_path = os.path.join(Config.ADDONS_DIR, folder)
+        if os.path.isdir(addon_path):
+            shutil.rmtree(addon_path, ignore_errors=True)
     state.pop(name, None)
     save_addons_state(state)
 

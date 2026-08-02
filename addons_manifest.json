@@ -4,9 +4,10 @@
       "name": "DBM-Devilsaur",
       "version": "1.0.0",
       "description": "Deadly Boss Mods — предупреждения о способностях боссов",
+      "folders": ["DBM-Devilsaur"],
       "files": [
         {
-          "path": "DBM-Devilsaur.toc",
+          "path": "DBM-Devilsaur/DBM-Devilsaur.toc",
           "download_url": "https://wotlk.amatol.blog/launcher/addons/DBM-Devilsaur/DBM-Devilsaur.toc",
           "sha256": "",
           "size": 0

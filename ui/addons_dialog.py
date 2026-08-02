@@ -15,7 +15,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from config import Config
 from updater.addons import (
     fetch_addons_manifest, AddonEntry, needs_update, get_installed_version,
-    install_selected, load_addons_state,
+    install_selected,
 )
 
 
@@ -227,10 +227,8 @@ class AddonsDialog(QDialog):
             self.btn_install.setEnabled(False)
             return
 
-        installed = load_addons_state()
-
         for entry in addons:
-            row = AddonRow(entry, installed.get(entry.name))
+            row = AddonRow(entry, get_installed_version(entry.name))
             self.rows.append(row)
             self.scroll_layout.addWidget(row)
 
@@ -284,8 +282,7 @@ class AddonsDialog(QDialog):
             self.status_label.setText(f"Установлено {count} из выбранных (были ошибки)")
 
         # Обновить статусы строк
-        installed = load_addons_state()
         for row in self.rows:
-            ver = installed.get(row.entry.name)
+            ver = get_installed_version(row.entry.name)
             if ver == row.entry.version:
                 row.checkbox.setChecked(False)

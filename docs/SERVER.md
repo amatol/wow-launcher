@@ -58,9 +58,21 @@ python tools/generate_launcher_manifest.py dist/Dreamworld.exe \
 
 ## Аддоны
 
-Аддоны публикуются как папки в `/opt/azerothcore/addons`; имя папки должно
-совпадать с именем аддона и внутри неё нужен верхнеуровневый `.toc`. Генератор
-не создаёт пустой манифест и записывает для каждого файла URL, размер и SHA-256:
+Аддоны публикуются как пакеты в `/opt/azerothcore/addons`. Обычный пакет — это
+папка с верхнеуровневым `.toc`. Если один аддон состоит из нескольких папок,
+создать общую папку пакета, а внутри разместить компоненты с собственными
+верхнеуровневыми `.toc`:
+
+```text
+/opt/azerothcore/addons/DeadlyBossMods/
+├── DBM-Core/DBM-Core.toc
+├── DBM-GUI/DBM-GUI.toc
+└── DBM-Party-WotLK/DBM-Party-WotLK.toc
+```
+
+Генератор автоматически определяет обе схемы, не создаёт пустой манифест и
+записывает список устанавливаемых папок, а для каждого файла — URL, размер и
+SHA-256:
 
 ```bash
 python tools/generate_addons_manifest.py --version 20260802

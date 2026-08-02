@@ -5,7 +5,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools.generate_addons_manifest import describe_addon
-from updater.addons import AddonEntry, AddonFile, _validate_entry, fetch_addons_manifest, install_addon
+from updater.addons import (
+    AddonEntry, AddonFile, _validate_entry, fetch_addons_manifest,
+    install_addon, install_selected,
+)
 
 
 class _Response:
@@ -56,6 +59,33 @@ class AddonsTests(unittest.TestCase):
              patch("updater.addons.requests.get", return_value=_Response(content=payload)):
             self.assertTrue(install_addon(entry))
             self.assertEqual((Path(directory) / "AddOns/MyAddon/MyAddon.toc").read_bytes(), payload)
+
+    def test_install_selected_reports_byte_progress_and_errors(self):
+        payload = b"## Interface: 30300"
+        entry = _validate_entry(AddonEntry("MyAddon", "1", folders=["MyAddon"], files=[AddonFile(
+            "MyAddon/MyAddon.toc", "https://example/MyAddon.toc",
+            hashlib.sha256(payload).hexdigest(), len(payload),
+        )]))
+        progress = []
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "Interface/AddOns")), \
+             patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")), \
+             patch("updater.addons.requests.get", return_value=_Response(content=payload)):
+            ok, count, errors = install_selected([entry], lambda done, total, msg: progress.append((done, total, msg)))
+        self.assertTrue(ok)
+        self.assertEqual(count, 1)
+        self.assertEqual(errors, [])
+        self.assertTrue(any(done == len(payload) and total == len(payload) for done, total, _ in progress))
+
+        errors = []
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "Interface/AddOns")), \
+             patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")), \
+             patch("updater.addons.requests.get", return_value=_Response(content=b"bad")):
+            ok, count, errors = install_selected([entry])
+        self.assertFalse(ok)
+        self.assertEqual(count, 0)
+        self.assertIn("неверный размер файла", errors[0])
 
     def test_generator_and_installer_support_multiple_folders(self):
         with tempfile.TemporaryDirectory() as directory:

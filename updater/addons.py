@@ -33,6 +33,7 @@ class AddonEntry:
 
 
 ProgressCallback = Callable[[int, int, str], None]
+ErrorCallback = Callable[[str], None]
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
@@ -156,10 +157,18 @@ def needs_update(entry: AddonEntry) -> bool:
     return not installed or not is_addon_installed(entry) or installed != entry.version
 
 
-def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bool:
+def install_addon(
+    entry: AddonEntry,
+    progress_cb: ProgressCallback = None,
+    error_cb: ErrorCallback = None,
+) -> bool:
     """Скачать проверенные файлы каталога и атомарно установить аддон."""
     os.makedirs(Config.ADDONS_DIR, exist_ok=True)
-    tmp_dir = tempfile.mkdtemp(prefix=".dreamworld_addon_", dir=Config.ADDONS_DIR)
+    # Keep the staging path short: deep addon trees can otherwise exceed the
+    # legacy Windows MAX_PATH limit even though their final paths are valid.
+    staging_parent = os.path.dirname(Config.ADDONS_DIR)
+    os.makedirs(staging_parent, exist_ok=True)
+    tmp_dir = tempfile.mkdtemp(prefix=".dw_", dir=staging_parent)
     staged_root = os.path.join(tmp_dir, "staged")
     try:
         downloaded_total = 0
@@ -178,8 +187,12 @@ def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bo
                         digest.update(chunk)
                         downloaded += len(chunk)
                         progress_cb and progress_cb(downloaded_total + downloaded, entry.size, f"Скачивание {entry.name}...")
-            if downloaded != item.size or digest.hexdigest() != item.sha256:
-                return False
+            if downloaded != item.size:
+                raise ValueError(
+                    f"неверный размер файла {item.path}: {downloaded} вместо {item.size}"
+                )
+            if digest.hexdigest() != item.sha256:
+                raise ValueError(f"неверная контрольная сумма файла {item.path}")
             downloaded_total += downloaded
 
         progress_cb and progress_cb(0, 0, f"Установка {entry.name}...")
@@ -218,7 +231,8 @@ def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bo
 
         progress_cb and progress_cb(0, 0, f"OK: {entry.name}")
         return True
-    except Exception:
+    except Exception as exc:
+        error_cb and error_cb(f"{entry.name}: {exc}")
         return False
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -238,9 +252,18 @@ def uninstall_addon(name: str):
 
 def install_selected(addons: List[AddonEntry], progress_cb: ProgressCallback = None) -> tuple:
     total = len(addons)
+    total_bytes = sum(addon.size for addon in addons)
+    completed_bytes = 0
     success = 0
+    errors = []
     for i, addon in enumerate(addons):
-        progress_cb and progress_cb(i, total, f"({i+1}/{total}) {addon.name}")
-        if install_addon(addon, lambda d, t, msg: progress_cb and progress_cb(i, total, msg)):
+        prefix = f"({i+1}/{total})"
+
+        def report(downloaded, _addon_total, message, base=completed_bytes):
+            progress_cb and progress_cb(base + downloaded, total_bytes, f"{prefix} {message}")
+
+        if install_addon(addon, report, errors.append):
             success += 1
-    return (success == total, success)
+            completed_bytes += addon.size
+            progress_cb and progress_cb(completed_bytes, total_bytes, f"{prefix} OK: {addon.name}")
+    return (success == total, success, errors)

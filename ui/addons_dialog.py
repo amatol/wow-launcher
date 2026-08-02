@@ -33,18 +33,18 @@ class AddonsInstallWorker(QThread):
     """Фоновая установка выбранных аддонов."""
 
     progress_signal = pyqtSignal(int, int, str)
-    finished_signal = pyqtSignal(bool, int)
+    finished_signal = pyqtSignal(bool, int, str)
 
     def __init__(self, addons: list):
         super().__init__()
         self._addons = addons
 
     def run(self):
-        ok, count = install_selected(
+        ok, count, errors = install_selected(
             self._addons,
             lambda i, total, msg: self.progress_signal.emit(i, total, msg),
         )
-        self.finished_signal.emit(ok, count)
+        self.finished_signal.emit(ok, count, "\n".join(errors))
 
 
 class AddonRow(QFrame):
@@ -271,7 +271,7 @@ class AddonsDialog(QDialog):
             self.progress_bar.setValue(pct)
         self.status_label.setText(msg)
 
-    def _on_install_finished(self, success: bool, count: int):
+    def _on_install_finished(self, success: bool, count: int, error: str):
         self.progress_bar.setVisible(False)
         self.btn_install.setEnabled(True)
         self.btn_select_all.setEnabled(True)
@@ -279,7 +279,9 @@ class AddonsDialog(QDialog):
         if success:
             self.status_label.setText(f"Установлено аддонов: {count}")
         else:
-            self.status_label.setText(f"Установлено {count} из выбранных (были ошибки)")
+            details = error or "Причина не определена"
+            self.status_label.setText(f"Установлено {count} из выбранных")
+            QMessageBox.warning(self, "Ошибка установки аддонов", details)
 
         # Обновить статусы строк
         for row in self.rows:

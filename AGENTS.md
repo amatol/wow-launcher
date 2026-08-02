@@ -103,7 +103,7 @@ updater/
   manifest.py           — парсинг JSON-манифеста, SHA-256 проверка
   http_updater.py       — HTTP-скачивание + бэкап .bak
   torrent_updater.py    — BitTorrent фолбэк (libtorrent, optional)
-  addons.py             — манифест аддонов, установка/обновление через ZIP
+  addons.py             — манифест аддонов, установка/обновление из каталогов
 ui/
   main_window.py        — главное окно, UpdateWorker, SelfUpdateWorker, SelfUpdateDialog
   widgets.py            — NewsWidget, NewsWorker, ProgressWidget

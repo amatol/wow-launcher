@@ -9,8 +9,7 @@
 ├── manifest.json
 ├── launcher_manifest.json
 ├── news.json              # генерируется из Breaking News игрового сервера
-├── addons_manifest.json   # публикуется последним после ZIP аддонов
-├── addons/                # проверенные ZIP-архивы аддонов
+├── addons_manifest.json   # публикуется последним после папок аддонов
 ├── Dreamworld.exe          # лаунчер
 └── files -> /opt/azerothcore/client
 ```
@@ -59,19 +58,18 @@ python tools/generate_launcher_manifest.py dist/Dreamworld.exe \
 
 ## Аддоны
 
-Исходный каталог должен содержать по одной папке на аддон; имя папки должно
+Аддоны публикуются как папки в `/opt/azerothcore/addons`; имя папки должно
 совпадать с именем аддона и внутри неё нужен верхнеуровневый `.toc`. Генератор
-не создаёт пустой манифест и формирует ZIP с обязательной корневой папкой:
+не создаёт пустой манифест и записывает для каждого файла URL, размер и SHA-256:
 
 ```bash
-python tools/generate_addons_manifest.py /path/to/addons /tmp/addons \
-  /tmp/addons_manifest.json --version 20260802
+python tools/generate_addons_manifest.py --version 20260802
 ```
 
-Сначала скопировать ZIP из `/tmp/addons/` в
-`/srv/dreamworld-launcher/addons/`, проверить их скачивание по HTTPS и только
-затем атомарно заменить `/srv/dreamworld-launcher/addons_manifest.json`.
-Контрольные суммы и размеры обязательны: лаунчер отвергает неполные записи.
+После добавления или изменения папок снова запустить генератор: он атомарно
+заменит `/srv/dreamworld-launcher/addons_manifest.json`. Nginx раздаёт
+`/opt/azerothcore/addons` по адресу `/launcher/addons/`, без листинга каталога.
+Контрольные суммы и размеры обязательны: лаунчер отвергает неполные файлы.
 
 ## Веб-сервер и TLS
 

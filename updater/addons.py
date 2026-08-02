@@ -1,16 +1,12 @@
-"""
-Обновление аддонов.
-Манифест аддонов — JSON со списком:
-[{ "name", "version", "description", "download_url", "sha256", "size" }]
-"""
+"""Обновление аддонов из опубликованных каталогов."""
 import hashlib
 import json
 import os
+import re
 import shutil
 import tempfile
-import zipfile
-import re
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 from typing import Callable, List, Optional
 
 import requests
@@ -19,49 +15,54 @@ from config import Config
 
 
 @dataclass
+class AddonFile:
+    path: str
+    download_url: str
+    sha256: str
+    size: int
+
+
+@dataclass
 class AddonEntry:
     name: str
     version: str
     description: str = ""
-    download_url: str = ""
-    sha256: str = ""
+    files: List[AddonFile] = field(default_factory=list)
     size: int = 0
 
 
 ProgressCallback = Callable[[int, int, str], None]
-
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+
+
+def _safe_relative_path(value: str) -> bool:
+    path = PurePosixPath(value)
+    return (
+        bool(value)
+        and "\\" not in value
+        and path.as_posix() == value
+        and not path.is_absolute()
+        and ".." not in path.parts
+        and all(":" not in part for part in path.parts)
+    )
 
 
 def _validate_entry(entry: AddonEntry) -> AddonEntry:
     if not _SAFE_NAME.fullmatch(entry.name):
         raise ValueError("invalid addon name")
-    if not entry.version or not entry.download_url:
-        raise ValueError("addon version and download_url are required")
-    if entry.size <= 0:
-        raise ValueError("addon size must be positive")
-    if not re.fullmatch(r"[0-9a-f]{64}", entry.sha256):
-        raise ValueError("addon sha256 must contain 64 lowercase hex characters")
+    if not entry.version or not entry.files:
+        raise ValueError("addon version and files are required")
+    seen = set()
+    for item in entry.files:
+        if not _safe_relative_path(item.path) or item.path in seen:
+            raise ValueError("invalid or duplicate addon file path")
+        if not item.download_url or item.size < 0:
+            raise ValueError("addon file URL and non-negative size are required")
+        if not re.fullmatch(r"[0-9a-f]{64}", item.sha256):
+            raise ValueError("addon file sha256 must contain 64 lowercase hex characters")
+        seen.add(item.path)
+    entry.size = sum(item.size for item in entry.files)
     return entry
-
-
-def _validated_zip_members(zf: zipfile.ZipFile, addon_name: str) -> List[zipfile.ZipInfo]:
-    """Accept only relative members below the declared top-level addon folder."""
-    members = zf.infolist()
-    prefix = addon_name + "/"
-    if not members:
-        raise ValueError("empty addon archive")
-    for member in members:
-        normalized = member.filename.replace("\\", "/")
-        parts = normalized.split("/")
-        if (
-            normalized.startswith("/")
-            or not normalized.startswith(prefix)
-            or ".." in parts
-            or any(":" in part for part in parts)
-        ):
-            raise ValueError("unsafe addon archive path")
-    return members
 
 
 def fetch_addons_manifest(url: str = None) -> Optional[List[AddonEntry]]:
@@ -76,20 +77,26 @@ def fetch_addons_manifest(url: str = None) -> Optional[List[AddonEntry]]:
                 data = data["addons"]
             else:
                 return None
-        return [_validate_entry(AddonEntry(
-            name=str(a.get("name", "")),
-            version=str(a.get("version", "")),
-            description=str(a.get("description", "")),
-            download_url=str(a.get("download_url", "")),
-            sha256=str(a.get("sha256", "")).lower(),
-            size=int(a.get("size", 0)),
-        )) for a in data]
+        result = []
+        for addon in data:
+            files = [AddonFile(
+                path=str(item.get("path", "")),
+                download_url=str(item.get("download_url", "")),
+                sha256=str(item.get("sha256", "")).lower(),
+                size=int(item.get("size", -1)),
+            ) for item in addon.get("files", [])]
+            result.append(_validate_entry(AddonEntry(
+                name=str(addon.get("name", "")),
+                version=str(addon.get("version", "")),
+                description=str(addon.get("description", "")),
+                files=files,
+            )))
+        return result
     except Exception:
         return None
 
 
 def load_addons_state() -> dict:
-    """Загрузить состояние установленных аддонов {name: version}."""
     if os.path.isfile(Config.ADDONS_STATE_FILE):
         try:
             with open(Config.ADDONS_STATE_FILE, "r", encoding="utf-8") as f:
@@ -100,7 +107,6 @@ def load_addons_state() -> dict:
 
 
 def save_addons_state(state: dict):
-    """Сохранить состояние установленных аддонов."""
     state_dir = os.path.dirname(Config.ADDONS_STATE_FILE)
     os.makedirs(state_dir, exist_ok=True)
     tmp_path = Config.ADDONS_STATE_FILE + ".tmp"
@@ -110,70 +116,47 @@ def save_addons_state(state: dict):
 
 
 def get_installed_version(name: str) -> Optional[str]:
-    """Вернуть установленную версию аддона или None."""
     return load_addons_state().get(name)
 
 
 def is_addon_installed(name: str) -> bool:
-    """Проверить, установлен ли аддон (папка существует)."""
     return os.path.isdir(os.path.join(Config.ADDONS_DIR, name))
 
 
 def needs_update(entry: AddonEntry) -> bool:
-    """Проверить, нужно ли обновить/установить аддон."""
     installed = get_installed_version(entry.name)
-    if not installed or not is_addon_installed(entry.name):
-        return True
-    return installed != entry.version
+    return not installed or not is_addon_installed(entry.name) or installed != entry.version
 
 
 def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bool:
-    """
-    Скачать, проверить хэш, распаковать в AddOns.
-    ZIP-архив должен содержать папку аддона на верхнем уровне.
-    """
-    if not entry.download_url:
-        return False
-
+    """Скачать проверенные файлы каталога и атомарно установить аддон."""
     tmp_dir = tempfile.mkdtemp(prefix="dreamworld_addon_")
-
+    staged_path = os.path.join(tmp_dir, entry.name)
     try:
-        progress_cb and progress_cb(0, entry.size, f"Скачивание {entry.name}...")
-        resp = requests.get(entry.download_url, stream=True, timeout=Config.HTTP_TIMEOUT)
-        resp.raise_for_status()
-
-        total = int(resp.headers.get("Content-Length", entry.size or 0))
-        downloaded = 0
-        h = hashlib.sha256()
-        zip_path = os.path.join(tmp_dir, entry.name + ".zip")
-
-        with open(zip_path, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=Config.DOWNLOAD_CHUNK):
-                if chunk:
-                    f.write(chunk)
-                    h.update(chunk)
-                    downloaded += len(chunk)
-                    progress_cb and progress_cb(downloaded, total, f"Скачивание {entry.name}...")
-
-        if entry.size and downloaded != entry.size:
-            return False
-        if entry.sha256 and h.hexdigest().lower() != entry.sha256.lower():
-            return False
+        downloaded_total = 0
+        for item in entry.files:
+            target = os.path.join(staged_path, *PurePosixPath(item.path).parts)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            progress_cb and progress_cb(downloaded_total, entry.size, f"Скачивание {entry.name}...")
+            resp = requests.get(item.download_url, stream=True, timeout=Config.HTTP_TIMEOUT)
+            resp.raise_for_status()
+            downloaded = 0
+            digest = hashlib.sha256()
+            with open(target, "wb") as output:
+                for chunk in resp.iter_content(chunk_size=Config.DOWNLOAD_CHUNK):
+                    if chunk:
+                        output.write(chunk)
+                        digest.update(chunk)
+                        downloaded += len(chunk)
+                        progress_cb and progress_cb(downloaded_total + downloaded, entry.size, f"Скачивание {entry.name}...")
+            if downloaded != item.size or digest.hexdigest() != item.sha256:
+                return False
+            downloaded_total += downloaded
 
         progress_cb and progress_cb(0, 0, f"Установка {entry.name}...")
-
-        # Проверить архив и распаковать сначала во временный каталог.
         os.makedirs(Config.ADDONS_DIR, exist_ok=True)
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            members = _validated_zip_members(zf, entry.name)
-            extract_dir = os.path.join(tmp_dir, "extracted")
-            zf.extractall(extract_dir, members)
-
-        staged_path = os.path.join(extract_dir, entry.name)
         addon_path = os.path.join(Config.ADDONS_DIR, entry.name)
         backup_path = os.path.join(tmp_dir, "previous")
-        if not os.path.isdir(staged_path):
-            return False
         if os.path.isdir(addon_path):
             os.replace(addon_path, backup_path)
         try:
@@ -183,23 +166,18 @@ def install_addon(entry: AddonEntry, progress_cb: ProgressCallback = None) -> bo
                 os.replace(backup_path, addon_path)
             raise
 
-        # Обновить состояние
         state = load_addons_state()
         state[entry.name] = entry.version
         save_addons_state(state)
-
         progress_cb and progress_cb(0, 0, f"OK: {entry.name}")
         return True
-
     except Exception:
         return False
-
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def uninstall_addon(name: str):
-    """Удалить аддон."""
     addon_path = os.path.join(Config.ADDONS_DIR, name)
     if os.path.isdir(addon_path):
         shutil.rmtree(addon_path, ignore_errors=True)
@@ -209,10 +187,6 @@ def uninstall_addon(name: str):
 
 
 def install_selected(addons: List[AddonEntry], progress_cb: ProgressCallback = None) -> tuple:
-    """
-    Установить/обновить выбранные аддоны.
-    Возвращает (успех, кол-во).
-    """
     total = len(addons)
     success = 0
     for i, addon in enumerate(addons):

@@ -74,6 +74,11 @@ python tools/generate_addons_manifest.py --version 20260802
 ## Веб-сервер и TLS
 
 Шаблон `deploy/nginx-dreamworld-launcher.conf` публикует только GET/HEAD.
+Он использует зоны `per_ip_connections` и `per_ip_requests`, объявленные в
+системном `/etc/nginx/conf.d/00-security-limits.conf`: на IP разрешены до
+8 одновременных соединений и 10 запросов/с со всплеском до 30. Скорость одного
+скачивания после первых 10 МиБ ограничена 20 МиБ/с. Глобальная конфигурация
+также задаёт короткие таймауты против Slowloris.
 nginx установлен и включён, TCP 80/443 разрешены в постоянной конфигурации
 nftables. Сертификат Let's Encrypt для `wotlk.amatol.blog` выпущен, а его
 автоматическое продление выполняет активный `certbot.timer`. Корень сайта

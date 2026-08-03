@@ -6,11 +6,11 @@ import sys
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QMessageBox, QInputDialog,
+    QPushButton, QLabel, QMessageBox,
     QProgressBar, QDialog, QApplication, QFrame
 )
-from PyQt5.QtCore import QThread, pyqtSignal, Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QUrl
+from PyQt5.QtGui import QFont, QDesktopServices
 
 from config import Config
 from core.version import check_wow_executable, launch_wow, get_current_version, set_current_version
@@ -316,16 +316,16 @@ class MainWindow(QMainWindow):
         self.btn_addons.setFixedHeight(40)
         self.btn_addons.clicked.connect(self.open_addons)
 
-        self.btn_settings = QPushButton("Настройки")
-        self.btn_settings.setFixedHeight(34)
-        self.btn_settings.clicked.connect(self.open_settings)
+        self.btn_account = QPushButton("Аккаунт")
+        self.btn_account.setFixedHeight(34)
+        self.btn_account.clicked.connect(self.open_account)
 
         right_layout.addWidget(self.btn_play)
         right_layout.addWidget(self.btn_cancel)
         right_layout.addSpacing(6)
         right_layout.addWidget(self.btn_addons)
         right_layout.addStretch()
-        right_layout.addWidget(self.btn_settings)
+        right_layout.addWidget(self.btn_account)
 
         main_row.addWidget(right_panel)
         outer.addLayout(main_row, stretch=1)
@@ -443,14 +443,51 @@ class MainWindow(QMainWindow):
         dialog = AddonsDialog(self)
         dialog.exec_()
 
-    def open_settings(self):
-        text, ok = QInputDialog.getText(
-            self, "URL манифеста", "Введите URL манифеста обновлений:",
-            text=Config.MANIFEST_URL
+    def open_account(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Аккаунт")
+        dialog.setFixedSize(360, 180)
+        dialog.setStyleSheet("""
+            QDialog { background: #0f0f23; }
+            QLabel { color: #e0e0e0; }
+            QPushButton {
+                background: #16213e; border: 1px solid #0f3460;
+                border-radius: 5px; padding: 6px 16px; font-size: 13px;
+                color: #e0e0e0;
+            }
+            QPushButton:hover { background: #0f3460; }
+        """)
+
+        layout = QVBoxLayout(dialog)
+
+        msg = QLabel(
+            "Управление учётной записью\n"
+            "осуществляется через Telegram-бот:\n"
+            "https://wotlk.amatol_bot"
         )
-        if ok and text:
-            Config.MANIFEST_URL = text
-            self.progress_widget.set_status("URL манифеста изменён", -1)
+        msg.setAlignment(Qt.AlignCenter)
+        msg.setStyleSheet("font-size: 13px;")
+        layout.addWidget(msg)
+
+        btn_layout = QHBoxLayout()
+        btn_open = QPushButton("Открыть бота")
+        btn_open.setFixedHeight(36)
+        btn_open.setStyleSheet(
+            "QPushButton { background: #e94560; border: none; border-radius: 5px; "
+            "font-size: 13px; font-weight: bold; color: white; }"
+            "QPushButton:hover { background: #ff5570; }"
+        )
+        btn_open.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://t.me/wotlk_amatol_bot")))
+
+        btn_cancel = QPushButton("Отмена")
+        btn_cancel.setFixedHeight(36)
+        btn_cancel.clicked.connect(dialog.reject)
+
+        btn_layout.addWidget(btn_open)
+        btn_layout.addWidget(btn_cancel)
+        layout.addLayout(btn_layout)
+
+        dialog.exec_()
 
     # --- Самообновление лаунчера ---
 

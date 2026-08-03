@@ -146,12 +146,8 @@ def apply_update(new_exe_path: str) -> bool:
         # Переименовать текущий .exe в .old
         os.rename(current_exe, old_path)
 
-        # Поставить новый на место
-        shutil_move(new_exe_path, current_exe)
-
-        # Очистить временную папку
-        tmp_dir = os.path.dirname(new_exe_path)
-        _cleanup_dir(tmp_dir)
+        # Поставить новый на место (попытка move, fallback — copy+remove)
+        _move_exe(new_exe_path, current_exe)
 
     except Exception:
         # Попытаться откатить
@@ -161,6 +157,10 @@ def apply_update(new_exe_path: str) -> bool:
             except Exception:
                 pass
         return False
+
+    # Очистить временную папку (не критично, если не выйдет — почистит при следующем запуске)
+    tmp_dir = os.path.dirname(new_exe_path)
+    _cleanup_dir(tmp_dir)
 
     # Перезапустить
     import subprocess
@@ -237,11 +237,16 @@ def _cleanup_dir(dir_path: str):
         pass
 
 
-def shutil_move(src: str, dst: str):
-    """Переместить файл, с fallback на копирование+удаление."""
+def _move_exe(src: str, dst: str):
+    """Переместить .exe. Сначала пытается move, затем copy+remove.
+    Если remove не выходит (файл залочен антивирусом) — не считается ошибкой,
+    т.к. файл уже скопирован на нужное место."""
     import shutil
     try:
         shutil.move(src, dst)
     except Exception:
         shutil.copy2(src, dst)
-        os.remove(src)
+        try:
+            os.remove(src)
+        except Exception:
+            pass

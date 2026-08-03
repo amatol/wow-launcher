@@ -356,10 +356,10 @@ class MainWindow(QMainWindow):
 
     def _refresh_info(self):
         exe_found = check_wow_executable()
-        version = get_current_version()
+        client_version = get_current_version()
         exe_status = "Wow.exe найден" if exe_found else "Wow.exe НЕ найден"
         self.info_label.setText(
-            f"Версия: {version}  |  {exe_status}"
+            f"Лаунчер: {Config.LAUNCHER_VERSION}  |  Клиент: {client_version}  |  {exe_status}"
         )
 
     def _load_news(self):

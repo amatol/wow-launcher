@@ -463,7 +463,7 @@ class MainWindow(QMainWindow):
         msg = QLabel(
             "Управление учётной записью\n"
             "осуществляется через Telegram-бот:\n"
-            "https://wotlk.amatol_bot"
+            "@wotlk_amatol_bot"
         )
         msg.setAlignment(Qt.AlignCenter)
         msg.setStyleSheet("font-size: 13px;")

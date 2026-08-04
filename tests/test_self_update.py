@@ -2,8 +2,9 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
-from core.self_update import _compare_versions, cleanup_self_update_files
+from core.self_update import _compare_versions, _move_exe, cleanup_self_update_files
 
 
 class SelfUpdateTests(unittest.TestCase):
@@ -51,6 +52,21 @@ class SelfUpdateTests(unittest.TestCase):
                 self.assertFalse(os.path.isdir(tmp), ".launcher_tmp should be removed")
             finally:
                 Config.GAME_DIR = orig_game_dir
+
+    def test_move_exe_keeps_installed_copy_if_source_remove_is_blocked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = os.path.join(directory, "Dreamworld.exe.new")
+            destination = os.path.join(directory, "Dreamworld.exe")
+            with open(source, "wb") as handle:
+                handle.write(b"new launcher")
+
+            with mock.patch("shutil.move", side_effect=OSError("move blocked")), \
+                    mock.patch("os.remove", side_effect=PermissionError("locked")):
+                _move_exe(source, destination)
+
+            with open(destination, "rb") as handle:
+                self.assertEqual(handle.read(), b"new launcher")
+            self.assertTrue(os.path.isfile(source))
 
 
 if __name__ == "__main__":

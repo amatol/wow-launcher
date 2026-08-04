@@ -85,7 +85,7 @@ class AddonsTests(unittest.TestCase):
             ok, count, errors = install_selected([entry])
         self.assertFalse(ok)
         self.assertEqual(count, 0)
-        self.assertIn("неверный размер файла", errors[0])
+        self.assertIn("не удалось скачать", errors[0])
 
     def test_generator_and_installer_support_multiple_folders(self):
         with tempfile.TemporaryDirectory() as directory:

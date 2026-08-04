@@ -4,14 +4,12 @@ HTTP/FTP обновление.
 """
 import os
 import shutil
-import hashlib
 import tempfile
 from typing import Callable, List
 
-import requests
-
 from config import Config
 from updater.manifest import FileEntry, Manifest
+from updater.net_utils import download_with_retries
 
 # Тип callback-функции прогресса: (текущий_файл, всего_файлов, байтов_скачано, байтов_всего, сообщение)
 ProgressCallback = Callable[[int, int, int, int, str], None]
@@ -49,47 +47,36 @@ class HTTPUpdater:
             return False
 
         tmp_dir = self._get_tmp_dir()
-        tmp_name = hashlib.sha256(entry.path.encode("utf-8")).hexdigest() + ".part"
+        tmp_name = entry.path.replace("/", "_").replace("\\", "_") + ".part"
         tmp_path = os.path.join(tmp_dir, tmp_name)
 
-        self.progress_cb(0, 0, 0, 0, f"Скачивание {entry.path} ...")
+        self.progress_cb(0, 0, 0, entry.size or 0, f"Скачивание {entry.path} ...")
 
-        try:
-            resp = requests.get(url, stream=True, timeout=Config.HTTP_TIMEOUT)
-            resp.raise_for_status()
-            total = int(resp.headers.get("Content-Length", entry.size or 0))
-            downloaded = 0
-            h = hashlib.sha256()
+        ok, err = download_with_retries(
+            url=url,
+            dest_path=tmp_path,
+            expected_size=entry.size,
+            expected_sha256=entry.sha256,
+            progress_cb=lambda d, t, msg: self.progress_cb(0, 0, d, t, f"{entry.path}: {msg}"),
+            cancel_check=lambda: self._cancel,
+        )
 
-            with open(tmp_path, "wb") as f:
-                for chunk in resp.iter_content(chunk_size=Config.DOWNLOAD_CHUNK):
-                    if self._cancel:
-                        return False
-                    if chunk:
-                        f.write(chunk)
-                        h.update(chunk)
-                        downloaded += len(chunk)
-                        self.progress_cb(0, 0, downloaded, total, f"Скачивание {entry.path}: {downloaded}/{total}")
-
-            if entry.size and downloaded != entry.size:
-                os.remove(tmp_path)
-                self.progress_cb(0, 0, 0, 0, f"[!] Размер не совпадает: {entry.path}")
-                return False
-            if entry.sha256 and h.hexdigest().lower() != entry.sha256.lower():
-                os.remove(tmp_path)
-                self.progress_cb(0, 0, 0, 0, f"[!] Хэш не совпадает: {entry.path}")
-                return False
-
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            os.replace(tmp_path, dest_path)
-            self.progress_cb(0, 0, downloaded, total, f"OK: {entry.path}")
-            return True
-
-        except Exception as e:
-            self.progress_cb(0, 0, 0, 0, f"[!] Ошибка скачивания {entry.path}: {e}")
+        if not ok:
+            if self._cancel:
+                self.progress_cb(0, 0, 0, 0, f"Отменено: {entry.path}")
+            else:
+                self.progress_cb(0, 0, 0, 0, f"[!] {entry.path}: {err}")
             if os.path.isfile(tmp_path):
-                os.remove(tmp_path)
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
             return False
+
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        os.replace(tmp_path, dest_path)
+        self.progress_cb(0, 0, entry.size or 0, entry.size or 0, f"OK: {entry.path}")
+        return True
 
     def apply_all(self, files: List[FileEntry]) -> tuple:
         """Скачать и применить все файлы. Возвращает (успех, кол-во)."""

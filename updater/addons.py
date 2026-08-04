@@ -176,24 +176,21 @@ def install_addon(
             target = os.path.join(staged_root, *PurePosixPath(item.path).parts)
             os.makedirs(os.path.dirname(target), exist_ok=True)
             progress_cb and progress_cb(downloaded_total, entry.size, f"Скачивание {entry.name}...")
-            resp = requests.get(item.download_url, stream=True, timeout=Config.HTTP_TIMEOUT)
-            resp.raise_for_status()
-            downloaded = 0
-            digest = hashlib.sha256()
-            with open(target, "wb") as output:
-                for chunk in resp.iter_content(chunk_size=Config.DOWNLOAD_CHUNK):
-                    if chunk:
-                        output.write(chunk)
-                        digest.update(chunk)
-                        downloaded += len(chunk)
-                        progress_cb and progress_cb(downloaded_total + downloaded, entry.size, f"Скачивание {entry.name}...")
-            if downloaded != item.size:
-                raise ValueError(
-                    f"неверный размер файла {item.path}: {downloaded} вместо {item.size}"
-                )
-            if digest.hexdigest() != item.sha256:
-                raise ValueError(f"неверная контрольная сумма файла {item.path}")
-            downloaded_total += downloaded
+
+            from updater.net_utils import download_with_retries
+
+            ok, err = download_with_retries(
+                url=item.download_url,
+                dest_path=target,
+                expected_size=item.size,
+                expected_sha256=item.sha256,
+                progress_cb=lambda d, t, msg: progress_cb and progress_cb(
+                    downloaded_total + d, entry.size, f"Скачивание {entry.name}..."
+                ),
+            )
+            if not ok:
+                raise ValueError(f"не удалось скачать {item.path}: {err}")
+            downloaded_total += item.size
 
         progress_cb and progress_cb(0, 0, f"Установка {entry.name}...")
         state = load_addons_state()

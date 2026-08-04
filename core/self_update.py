@@ -12,7 +12,6 @@
 8. Лаунчер перезапускается
 9. При следующем запуске .old удаляется (cleanup_self_update_files)
 """
-import hashlib
 import os
 import sys
 import tempfile
@@ -84,35 +83,22 @@ def download_update(manifest: dict, progress_cb: ProgressCallback = None) -> Tup
     tmp_dir = tempfile.mkdtemp(prefix="dreamworld_update_")
     tmp_path = os.path.join(tmp_dir, Config.LAUNCHER_EXE_NAME + ".new")
 
-    try:
-        resp = requests.get(download_url, stream=True, timeout=Config.HTTP_TIMEOUT)
-        resp.raise_for_status()
+    from updater.net_utils import download_with_retries
 
-        total = int(resp.headers.get("Content-Length", expected_size or 0))
-        downloaded = 0
-        h = hashlib.sha256()
+    ok, err = download_with_retries(
+        url=download_url,
+        dest_path=tmp_path,
+        expected_size=expected_size,
+        expected_sha256=expected_sha256,
+        progress_cb=lambda d, t, msg: progress_cb and progress_cb(d, t, msg),
+        max_retries=3,
+    )
 
-        with open(tmp_path, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=Config.DOWNLOAD_CHUNK):
-                if chunk:
-                    f.write(chunk)
-                    h.update(chunk)
-                    downloaded += len(chunk)
-                    if progress_cb:
-                        progress_cb(downloaded, total, "Downloading launcher update...")
-
-        if expected_size and downloaded != expected_size:
-            _cleanup_dir(tmp_dir)
-            return False, ""
-        if expected_sha256 and h.hexdigest().lower() != expected_sha256.lower():
-            _cleanup_dir(tmp_dir)
-            return False, ""
-
-        return True, tmp_path
-
-    except Exception:
+    if not ok:
         _cleanup_dir(tmp_dir)
         return False, ""
+
+    return True, tmp_path
 
 
 def apply_update(new_exe_path: str) -> bool:

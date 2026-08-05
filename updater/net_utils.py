@@ -59,15 +59,21 @@ def download_with_retries(
             if expected_size and downloaded != expected_size:
                 last_error = f"размер не совпадает: {downloaded} вместо {expected_size}"
                 if attempt < max_retries:
-                    _retry_delay(attempt)
+                    if not _retry_delay(attempt, cancel_check):
+                        _remove_partial(dest_path)
+                        return False, "отменено"
                     continue
+                _remove_partial(dest_path)
                 return False, last_error
 
             if expected_sha256 and h.hexdigest().lower() != expected_sha256.lower():
                 last_error = f"хэш не совпадает"
                 if attempt < max_retries:
-                    _retry_delay(attempt)
+                    if not _retry_delay(attempt, cancel_check):
+                        _remove_partial(dest_path)
+                        return False, "отменено"
                     continue
+                _remove_partial(dest_path)
                 return False, last_error
 
             return True, ""
@@ -80,6 +86,7 @@ def download_with_retries(
             last_error = f"HTTP ошибка: {e}"
             # Для 4xx ошибок ретраи бессмысленны
             if resp.status_code >= 400 and resp.status_code < 500:
+                _remove_partial(dest_path)
                 return False, last_error
         except Exception as e:
             last_error = f"ошибка: {e}"
@@ -87,20 +94,33 @@ def download_with_retries(
         if attempt < max_retries:
             if progress_cb:
                 progress_cb(0, 0, f"Повторная попытка {attempt + 1}/{max_retries}...")
-            _retry_delay(attempt)
+            if not _retry_delay(attempt, cancel_check):
+                _remove_partial(dest_path)
+                return False, "отменено"
         else:
             if progress_cb:
                 progress_cb(0, 0, f"Не удалось скачать после {max_retries} попыток")
 
-    if os.path.isfile(dest_path):
-        try:
-            os.remove(dest_path)
-        except Exception:
-            pass
+    _remove_partial(dest_path)
 
     return False, last_error
 
 
-def _retry_delay(attempt: int):
-    """Экспоненциальная задержка: 2, 4, 8 секунд."""
-    time.sleep(RETRY_DELAY * (2 ** (attempt - 1)))
+def _retry_delay(attempt: int, cancel_check: Callable[[], bool] = None) -> bool:
+    """Подождать 2, 4, ... секунд, сохраняя быструю реакцию на отмену."""
+    deadline = time.monotonic() + RETRY_DELAY * (2 ** (attempt - 1))
+    while True:
+        if cancel_check and cancel_check():
+            return False
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return True
+        time.sleep(min(0.1, remaining))
+
+
+def _remove_partial(path: str) -> None:
+    if os.path.isfile(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass

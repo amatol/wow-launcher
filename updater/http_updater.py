@@ -4,6 +4,7 @@ HTTP/FTP обновление.
 """
 import os
 import shutil
+import hashlib
 import tempfile
 from typing import Callable, List
 
@@ -47,7 +48,9 @@ class HTTPUpdater:
             return False
 
         tmp_dir = self._get_tmp_dir()
-        tmp_name = entry.path.replace("/", "_").replace("\\", "_") + ".part"
+        # Keep the staging filename short on Windows even for deeply nested
+        # client paths, and avoid collisions between e.g. a/b and a_b.
+        tmp_name = hashlib.sha256(entry.path.encode("utf-8")).hexdigest() + ".part"
         tmp_path = os.path.join(tmp_dir, tmp_name)
 
         self.progress_cb(0, 0, 0, entry.size or 0, f"Скачивание {entry.path} ...")

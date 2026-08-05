@@ -81,6 +81,7 @@ class AddonsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "Interface/AddOns")), \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")), \
+             patch("updater.net_utils._retry_delay", return_value=True), \
              patch("updater.addons.requests.get", return_value=_Response(content=b"bad")):
             ok, count, errors = install_selected([entry])
         self.assertFalse(ok)

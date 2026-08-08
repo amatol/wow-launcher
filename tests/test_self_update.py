@@ -4,7 +4,10 @@ import tempfile
 import unittest
 from unittest import mock
 
-from core.self_update import _compare_versions, _move_exe, cleanup_self_update_files
+from core.self_update import (
+    _clean_pyinstaller_environment, _compare_versions, _move_exe,
+    cleanup_self_update_files, wait_for_update_parent,
+)
 
 
 class SelfUpdateTests(unittest.TestCase):
@@ -67,6 +70,41 @@ class SelfUpdateTests(unittest.TestCase):
             with open(destination, "rb") as handle:
                 self.assertEqual(handle.read(), b"new launcher")
             self.assertTrue(os.path.isfile(source))
+
+    def test_restart_environment_does_not_reuse_old_pyinstaller_runtime(self):
+        with mock.patch.dict(os.environ, {
+            "_PYI_APPLICATION_HOME_DIR": r"C:\\Temp\\_MEIold",
+            "_MEIPASS2": r"C:\\Temp\\_MEIold",
+        }):
+            env = _clean_pyinstaller_environment()
+
+        self.assertEqual(env["PYINSTALLER_RESET_ENVIRONMENT"], "1")
+        self.assertNotIn("_PYI_APPLICATION_HOME_DIR", env)
+        self.assertNotIn("_MEIPASS2", env)
+
+    def test_update_restart_wait_argument_is_removed_before_qt(self):
+        argv = ["Dreamworld.exe", "--self-update-parent-pid", "123", "other"]
+        with mock.patch("core.self_update.sys.platform", "win32"), \
+                mock.patch("core.self_update._wait_for_windows_process") as wait:
+            self.assertTrue(wait_for_update_parent(argv, timeout_ms=5000))
+
+        self.assertEqual(argv, ["Dreamworld.exe", "other"])
+        wait.assert_called_once_with(123, 5000)
+
+    def test_cleanup_keeps_recent_update_and_unrelated_temp_directory(self):
+        with tempfile.TemporaryDirectory() as temp_root, tempfile.TemporaryDirectory() as game_dir:
+            recent_update = os.path.join(temp_root, "dreamworld_update_active")
+            unrelated = os.path.join(temp_root, "dreamworld_other_operation")
+            os.makedirs(recent_update)
+            os.makedirs(unrelated)
+
+            from config import Config
+            with mock.patch.object(Config, "GAME_DIR", game_dir), \
+                    mock.patch("tempfile.gettempdir", return_value=temp_root):
+                cleanup_self_update_files()
+
+            self.assertTrue(os.path.isdir(recent_update))
+            self.assertTrue(os.path.isdir(unrelated))
 
 
 if __name__ == "__main__":

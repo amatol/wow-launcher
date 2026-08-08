@@ -15,6 +15,7 @@
 import os
 import sys
 import tempfile
+import time
 from typing import Callable, Optional, Tuple
 
 import requests
@@ -148,12 +149,14 @@ def apply_update(new_exe_path: str) -> bool:
     tmp_dir = os.path.dirname(new_exe_path)
     _cleanup_dir(tmp_dir)
 
-    # Перезапустить
+    # Новый процесс сначала ждёт завершения старого. Это не даёт
+    # двум GUI одновременно работать с файлами и временными каталогами.
     import subprocess
     try:
         subprocess.Popen(
-            [current_exe],
+            [current_exe, "--self-update-parent-pid", str(os.getpid())],
             cwd=exe_dir,
+            env=_clean_pyinstaller_environment(),
             creationflags=(
                 subprocess.CREATE_NEW_PROCESS_GROUP
                 | getattr(subprocess, "DETACHED_PROCESS", 0)
@@ -163,6 +166,54 @@ def apply_update(new_exe_path: str) -> bool:
         return False
 
     return True
+
+
+def _clean_pyinstaller_environment() -> dict:
+    """Заставить новый one-file EXE распаковать собственный runtime."""
+    env = os.environ.copy()
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    env.pop("_PYI_APPLICATION_HOME_DIR", None)
+    env.pop("_MEIPASS2", None)
+    return env
+
+
+def wait_for_update_parent(argv=None, timeout_ms: int = 0xFFFFFFFF) -> bool:
+    """Обработать внутренний аргумент перезапуска до создания QApplication.
+
+    Возвращает True, если аргумент был найден и удалён из argv.
+    """
+    argv = sys.argv if argv is None else argv
+    flag = "--self-update-parent-pid"
+    if flag not in argv:
+        return False
+
+    index = argv.index(flag)
+    try:
+        pid = int(argv[index + 1])
+        if pid <= 0:
+            raise ValueError
+    except (IndexError, TypeError, ValueError):
+        del argv[index:index + 2]
+        return True
+
+    del argv[index:index + 2]
+    if sys.platform == "win32":
+        _wait_for_windows_process(pid, timeout_ms)
+    return True
+
+
+def _wait_for_windows_process(pid: int, timeout_ms: int) -> None:
+    """Дождаться PID без опроса tasklist и всплывающего cmd-окна."""
+    import ctypes
+
+    synchronize = 0x00100000
+    handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, pid)
+    if not handle:
+        return
+    try:
+        ctypes.windll.kernel32.WaitForSingleObject(handle, timeout_ms)
+    finally:
+        ctypes.windll.kernel32.CloseHandle(handle)
 
 
 def cleanup_self_update_files():
@@ -196,13 +247,17 @@ def cleanup_self_update_files():
         except Exception:
             pass
 
-    # Забытые .new в системном temp
+    # Забытые .new в системном temp. Не трогать общий префикс
+    # dreamworld_: его используют другие операции и другой экземпляр лаунчера.
     try:
         tmp_root = tempfile.gettempdir()
         for entry in os.listdir(tmp_root):
-            if entry.startswith("dreamworld_update_") or entry.startswith("dreamworld_"):
+            if entry.startswith("dreamworld_update_"):
                 full = os.path.join(tmp_root, entry)
                 try:
+                    # Активная загрузка не должна быть удалена параллельным запуском.
+                    if time.time() - os.path.getmtime(full) < 24 * 60 * 60:
+                        continue
                     if os.path.isdir(full):
                         import shutil
                         shutil.rmtree(full)

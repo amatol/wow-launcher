@@ -11,11 +11,14 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
 from config import Config
-from core.self_update import cleanup_self_update_files
+from core.self_update import cleanup_self_update_files, wait_for_update_parent
 from ui.main_window import MainWindow
 
 
 def main():
+    # При самообновлении не создавать второе окно, пока старый процесс ещё завершается.
+    wait_for_update_parent()
+
     app = QApplication(sys.argv)
     app.setApplicationName("Dreamworld Launcher")
 

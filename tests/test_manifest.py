@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from updater.manifest import Manifest, compute_needed_files, filter_needed
+from updater.manifest import Manifest, compute_existing_removed_files, compute_needed_files, filter_needed
 
 
 class ManifestTests(unittest.TestCase):
@@ -52,6 +52,19 @@ class ManifestTests(unittest.TestCase):
             })
             needed = filter_needed(manifest, "20260731", directory)
             self.assertEqual(len(needed), 1)
+
+    def test_validates_and_finds_removed_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            obsolete = Path(directory, "Interface", "AddOns", "Old", "Old.toc")
+            obsolete.parent.mkdir(parents=True)
+            obsolete.write_bytes(b"old")
+            manifest = Manifest.from_dict({
+                "version": "20260808", "files": [],
+                "removed_files": ["Interface/AddOns/Old/Old.toc"],
+            })
+            self.assertEqual(compute_existing_removed_files(manifest, directory), ["Interface/AddOns/Old/Old.toc"])
+            with self.assertRaises(ValueError):
+                Manifest.from_dict({"version": "20260808", "files": [], "removed_files": ["../Wow.exe"]})
 
 
 if __name__ == "__main__":

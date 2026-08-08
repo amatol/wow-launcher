@@ -19,6 +19,14 @@ class GenerateManifestTests(unittest.TestCase):
             self.assertEqual([item["path"] for item in result["files"]], ["Data/patch.MPQ", "Wow.exe"])
             self.assertEqual(result["files"][0]["http_url"], "https://example.test/launcher/files/Data/patch.MPQ")
 
+    def test_lists_files_removed_since_previous_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "Wow.exe").write_bytes(b"wow")
+            previous = {"files": [{"path": "Wow.exe"}, {"path": "Interface/AddOns/Old/Old.toc"}]}
+            result = build_manifest(root, "20260808", "https://example.test", previous)
+            self.assertEqual(result["removed_files"], ["Interface/AddOns/Old/Old.toc"])
+
 
 if __name__ == "__main__":
     unittest.main()

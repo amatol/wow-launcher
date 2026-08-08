@@ -18,7 +18,9 @@ from core.self_update import (
     fetch_launcher_manifest, is_update_available,
     download_update, apply_update,
 )
-from updater.manifest import Manifest, filter_needed
+from updater.manifest import (
+    Manifest, compute_existing_removed_files, filter_needed, remove_obsolete_files,
+)
 from updater.http_updater import HTTPUpdater
 from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
 from ui.addons_dialog import AddonsDialog
@@ -33,7 +35,8 @@ class CheckWorker(QThread):
         try:
             manifest = Manifest.fetch(Config.MANIFEST_URL)
             needed = filter_needed(manifest, Config.get_current_version(), Config.GAME_DIR)
-            self.check_done.emit(len(needed) > 0)
+            removed = compute_existing_removed_files(manifest, Config.GAME_DIR)
+            self.check_done.emit(bool(needed or removed))
         except Exception:
             # При ошибке сети — считаем что обновлений нет, даём играть
             self.check_done.emit(False)
@@ -75,13 +78,17 @@ class UpdateWorker(QThread):
             self.log_signal.emit(f"Манифест: версия {manifest.version}, файлов: {len(manifest.files)}")
 
             needed = filter_needed(manifest, Config.get_current_version(), self.game_dir)
+            removed = compute_existing_removed_files(manifest, self.game_dir)
 
-            if not needed:
+            if not needed and not removed:
                 set_current_version(manifest.version)
                 self.finished_signal.emit(True, "Клиент актуален. Обновлений нет.")
                 return
 
-            self.log_signal.emit(f"Нужно обновить: {len(needed)} из {len(manifest.files)} файлов")
+            self.log_signal.emit(
+                f"Нужно обновить: {len(needed)} из {len(manifest.files)} файлов; "
+                f"удалить устаревших: {len(removed)}"
+            )
 
             # Попытка HTTP
             self.log_signal.emit("HTTP-обновление...")
@@ -90,7 +97,9 @@ class UpdateWorker(QThread):
 
             if ok:
                 set_current_version(manifest.version)
-                self.finished_signal.emit(True, f"Обновление завершено. Обновлено файлов: {count}")
+                self.finished_signal.emit(
+                    True, f"Обновление завершено. Обновлено файлов: {count}, удалено: {len(removed)}"
+                )
                 return
 
             if self._cancel:
@@ -108,6 +117,7 @@ class UpdateWorker(QThread):
                 self._updater = TorrentUpdater(self.game_dir, manifest, self._progress_cb)
                 ok_t, count_t = self._updater.apply_all(needed)
                 if ok_t:
+                    remove_obsolete_files(manifest, self.game_dir)
                     set_current_version(manifest.version)
                     self.finished_signal.emit(True, f"Обновление через торрент. Файлов: {count_t}")
                 else:

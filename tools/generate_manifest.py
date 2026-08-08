@@ -20,7 +20,7 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def build_manifest(source: Path, version: str, base_url: str) -> dict:
+def build_manifest(source: Path, version: str, base_url: str, previous: dict = None) -> dict:
     if not (version.isdigit() and len(version) == 8):
         raise ValueError("version должна иметь формат YYYYMMDD")
     files = []
@@ -38,7 +38,12 @@ def build_manifest(source: Path, version: str, base_url: str) -> dict:
             "sha256": sha256(path),
             "http_url": f"{base_url.rstrip('/')}/files/{encoded_path}",
         })
-    return {"version": version, "files": files}
+    manifest = {"version": version, "files": files}
+    if previous is not None:
+        current_paths = {entry["path"] for entry in files}
+        previous_paths = {entry["path"] for entry in previous.get("files", [])}
+        manifest["removed_files"] = sorted(previous_paths - current_paths)
+    return manifest
 
 
 def main() -> None:
@@ -47,10 +52,14 @@ def main() -> None:
     parser.add_argument("output", type=Path, help="Путь manifest.json")
     parser.add_argument("--version", required=True)
     parser.add_argument("--base-url", default="https://wotlk.amatol.blog/launcher")
+    parser.add_argument("--previous-manifest", type=Path)
     args = parser.parse_args()
     if not args.source.is_dir():
         parser.error(f"Папка не существует: {args.source}")
-    manifest = build_manifest(args.source.resolve(), args.version, args.base_url)
+    previous = None
+    if args.previous_manifest:
+        previous = json.loads(args.previous_manifest.read_text(encoding="utf-8"))
+    manifest = build_manifest(args.source.resolve(), args.version, args.base_url, previous)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

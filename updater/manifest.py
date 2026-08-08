@@ -26,6 +26,7 @@ class FileEntry:
 class Manifest:
     version: str
     files: List[FileEntry] = field(default_factory=list)
+    removed_files: List[str] = field(default_factory=list)
     raw: dict = field(default_factory=dict)
 
     @classmethod
@@ -51,9 +52,16 @@ class Manifest:
                 http_url=f.get("http_url"),
                 torrent_url=f.get("torrent_url"),
             ))
+        removed_files = [_validate_relative_path(path) for path in data.get("removed_files", [])]
+        if len(removed_files) != len(set(removed_files)):
+            raise ValueError("Манифест содержит повторяющиеся пути удаления")
+        managed_paths = {entry.path for entry in files}
+        if managed_paths.intersection(removed_files):
+            raise ValueError("Файл нельзя одновременно обновлять и удалять")
         return cls(
             version=version,
             files=files,
+            removed_files=removed_files,
             raw=data,
         )
 
@@ -98,6 +106,38 @@ def compute_needed_files(manifest: Manifest, game_dir: str) -> List[FileEntry]:
             if local_hash.lower() != entry.sha256.lower():
                 needed.append(entry)
     return needed
+
+
+def compute_existing_removed_files(manifest: Manifest, game_dir: str) -> List[str]:
+    """Вернуть явно перечисленные устаревшие файлы, которые ещё есть у клиента."""
+    return [
+        path for path in manifest.removed_files
+        if os.path.isfile(os.path.join(game_dir, path))
+    ]
+
+
+def remove_obsolete_files(manifest: Manifest, game_dir: str) -> int:
+    """Удалить только явно перечисленные файлы и ставшие пустыми каталоги."""
+    game_dir = os.path.abspath(game_dir)
+    parents = set()
+    removed = 0
+    for relative in manifest.removed_files:
+        path = os.path.abspath(os.path.join(game_dir, relative))
+        if os.path.commonpath((game_dir, path)) != game_dir:
+            raise ValueError(f"Небезопасный путь удаления: {relative}")
+        if os.path.isfile(path):
+            os.remove(path)
+            removed += 1
+            parents.add(os.path.dirname(path))
+
+    for directory in sorted(parents, key=len, reverse=True):
+        while directory != game_dir:
+            try:
+                os.rmdir(directory)
+            except OSError:
+                break
+            directory = os.path.dirname(directory)
+    return removed
 
 
 def _sha256_file(path: str, chunk: int = 65536) -> str:

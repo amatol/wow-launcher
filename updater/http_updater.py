@@ -9,7 +9,7 @@ import tempfile
 from typing import Callable, List
 
 from config import Config
-from updater.manifest import FileEntry, Manifest
+from updater.manifest import FileEntry, Manifest, remove_obsolete_files
 from updater.net_utils import download_with_retries
 
 # Тип callback-функции прогресса: (текущий_файл, всего_файлов, байтов_скачано, байтов_всего, сообщение)
@@ -105,5 +105,8 @@ class HTTPUpdater:
                 if backup_path and os.path.isfile(backup_path):
                     shutil.move(backup_path, dest)
 
+        ok = success_count == total and not self._cancel
+        if ok:
+            remove_obsolete_files(self.manifest, self.game_dir)
         self.cleanup()
-        return (success_count == total and not self._cancel, success_count)
+        return (ok, success_count)

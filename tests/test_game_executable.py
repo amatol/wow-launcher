@@ -17,6 +17,11 @@ class GameExecutableTests(unittest.TestCase):
                 wow = Path(directory, "Wow.exe")
                 wow.write_bytes(b"client")
                 self.assertEqual(Config.detect_wow_exe(), str(wow))
+                self.assertFalse(Config.has_complete_client_layout())
+                Path(directory, "Data").mkdir()
+                self.assertTrue(Config.has_complete_client_layout())
+                Path(directory, ".dreamworld_bootstrap_incomplete").touch()
+                self.assertFalse(Config.has_complete_client_layout())
         finally:
             Config.GAME_DIR = original_dir
             Config.WOW_EXE = original_exe

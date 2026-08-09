@@ -22,6 +22,7 @@ from updater.manifest import (
     Manifest, compute_existing_removed_files, filter_needed, remove_obsolete_files,
 )
 from updater.http_updater import HTTPUpdater
+from updater.bootstrap import BootstrapInstaller
 from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
 from ui.addons_dialog import AddonsDialog
 
@@ -32,6 +33,9 @@ class CheckWorker(QThread):
     check_done = pyqtSignal(bool)  # True если есть обновления
 
     def run(self):
+        if not Config.has_complete_client_layout():
+            self.check_done.emit(True)
+            return
         try:
             manifest = Manifest.fetch(Config.MANIFEST_URL)
             needed = filter_needed(manifest, Config.get_current_version(), Config.GAME_DIR)
@@ -73,6 +77,20 @@ class UpdateWorker(QThread):
 
     def run(self):
         try:
+            if not Config.has_complete_client_layout():
+                self.log_signal.emit("Скачивание базового клиента с Яндекс Диска...")
+                self._updater = BootstrapInstaller(
+                    self.game_dir,
+                    lambda done, total, msg: self.progress_signal.emit(
+                        msg, int(done * 100 / total) if total else -1
+                    ),
+                )
+                ok, message = self._updater.install(Config.CLIENT_ARCHIVE_PUBLIC_URL)
+                if not ok:
+                    self.finished_signal.emit(False, message)
+                    return
+                self.log_signal.emit(message)
+
             self.log_signal.emit("Проверка файлов клиента...")
             manifest = Manifest.fetch(self.manifest_url)
             self.log_signal.emit(f"Манифест: версия {manifest.version}, файлов: {len(manifest.files)}")
@@ -392,7 +410,11 @@ class MainWindow(QMainWindow):
     def _on_check_done(self, has_updates: bool):
         if has_updates:
             self._set_play_mode(False)
-            self.progress_widget.set_status("Доступно обновление клиента", -1)
+            if Config.has_complete_client_layout():
+                self.progress_widget.set_status("Доступно обновление клиента", -1)
+            else:
+                self.btn_play.setText("Скачать клиент")
+                self.progress_widget.set_status("Клиент не установлен", -1)
         else:
             self._set_play_mode(True)
             self.progress_widget.set_status("Готово", -1)

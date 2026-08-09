@@ -24,6 +24,13 @@ class Config:
     # URL манифеста обновлений (JSON)
     MANIFEST_URL = f"{UPDATE_BASE_URL}/manifest.json"
 
+    # Публичная ссылка на базовый архив клиента. Её источником является
+    # актуальная запись «Скачать клиент» в Telegram-боте.
+    CLIENT_ARCHIVE_PUBLIC_URL = "https://disk.yandex.ru/d/OI20zyyac6kU_Q"
+
+    # API Яндекс Диска выдаёт временный прямой URL для публичной ссылки.
+    YANDEX_DOWNLOAD_API_URL = "https://cloud-api.yandex.net/v1/disk/public/resources/download"
+
     # URL новостей сервера (JSON: список {title, date, body})
     NEWS_URL = f"{UPDATE_BASE_URL}/news.json"
 
@@ -70,6 +77,16 @@ class Config:
                 cls.WOW_EXE = path
                 return path
         return None
+
+    @classmethod
+    def has_complete_client_layout(cls):
+        """Базовый клиент существует, если найдены Wow.exe и каталог Data."""
+        incomplete = os.path.join(cls.GAME_DIR, ".dreamworld_bootstrap_incomplete")
+        return (
+            not os.path.exists(incomplete)
+            and cls.detect_wow_exe() is not None
+            and os.path.isdir(os.path.join(cls.GAME_DIR, "Data"))
+        )
 
     @classmethod
     def get_current_version(cls):

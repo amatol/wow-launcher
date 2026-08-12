@@ -30,6 +30,7 @@ class AddonEntry:
     folders: List[str] = field(default_factory=list)
     files: List[AddonFile] = field(default_factory=list)
     size: int = 0
+    installed_version: Optional[str] = None
 
 
 ProgressCallback = Callable[[int, int, str], None]
@@ -148,13 +149,37 @@ def get_installed_version(name: str) -> Optional[str]:
     return value if isinstance(value, str) else None
 
 
+def matches_installed_files(entry: AddonEntry) -> bool:
+    """Return True only when every published file matches the local addon."""
+    for item in entry.files:
+        path = os.path.join(Config.ADDONS_DIR, *PurePosixPath(item.path).parts)
+        if not os.path.isfile(path) or os.path.getsize(path) != item.size:
+            return False
+        digest = hashlib.sha256()
+        with open(path, "rb") as source:
+            for chunk in iter(lambda: source.read(Config.DOWNLOAD_CHUNK), b""):
+                digest.update(chunk)
+        if digest.hexdigest() != item.sha256:
+            return False
+    return True
+
+
+def detect_installed_version(entry: AddonEntry) -> Optional[str]:
+    """Detect the published version from files, including manual installs."""
+    if matches_installed_files(entry):
+        return entry.version
+    installed = get_installed_version(entry.name)
+    if installed and installed != entry.version and is_addon_installed(entry):
+        return installed
+    return None
+
+
 def is_addon_installed(entry: AddonEntry) -> bool:
     return all(os.path.isdir(os.path.join(Config.ADDONS_DIR, folder)) for folder in entry.folders)
 
 
 def needs_update(entry: AddonEntry) -> bool:
-    installed = get_installed_version(entry.name)
-    return not installed or not is_addon_installed(entry) or installed != entry.version
+    return detect_installed_version(entry) != entry.version
 
 
 def install_addon(

@@ -7,7 +7,7 @@ from unittest.mock import patch
 from tools.generate_addons_manifest import describe_addon
 from updater.addons import (
     AddonEntry, AddonFile, _validate_entry, fetch_addons_manifest,
-    install_addon, install_selected,
+    detect_installed_version, install_addon, install_selected,
 )
 
 
@@ -23,6 +23,22 @@ class _Response:
 
 
 class AddonsTests(unittest.TestCase):
+    def test_detects_matching_manual_install_without_state_file(self):
+        payload = b"## Interface: 30300"
+        entry = _validate_entry(AddonEntry("MyAddon", "7", folders=["MyAddon"], files=[AddonFile(
+            "MyAddon/MyAddon.toc", "https://example/MyAddon.toc",
+            hashlib.sha256(payload).hexdigest(), len(payload),
+        )]))
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "AddOns")), \
+             patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")):
+            toc = Path(directory) / "AddOns/MyAddon/MyAddon.toc"
+            toc.parent.mkdir(parents=True)
+            toc.write_bytes(payload)
+            self.assertEqual(detect_installed_version(entry), "7")
+            toc.write_bytes(b"different")
+            self.assertIsNone(detect_installed_version(entry))
+
     def test_manifest_rejects_unsafe_or_unverified_files(self):
         item = {"path": "../Data/file", "download_url": "https://example/file", "size": 1, "sha256": "a" * 64}
         base = {"name": "SafeAddon", "version": "1", "folders": ["SafeAddon"], "files": [item]}

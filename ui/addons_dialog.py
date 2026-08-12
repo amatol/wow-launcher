@@ -14,7 +14,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt
 
 from config import Config
 from updater.addons import (
-    fetch_addons_manifest, AddonEntry, needs_update, get_installed_version,
+    fetch_addons_manifest, AddonEntry, detect_installed_version,
     install_selected,
 )
 
@@ -26,6 +26,8 @@ class AddonsFetchWorker(QThread):
 
     def run(self):
         addons = fetch_addons_manifest()
+        for entry in addons or []:
+            entry.installed_version = detect_installed_version(entry)
         self.fetched.emit(addons or [])
 
 
@@ -92,9 +94,8 @@ class AddonRow(QFrame):
             desc_label.setWordWrap(True)
             layout.addWidget(desc_label, 3, 0, 1, 2)
 
-        # По умолчанию отмечен если не установлен или есть обновление
-        if not installed_version or (installed_version and installed_version != entry.version):
-            self.checkbox.setChecked(True)
+        # Выбор всегда явный: при открытии диалога все флажки сняты.
+        self.checkbox.setChecked(False)
 
 
 class AddonsDialog(QDialog):
@@ -229,7 +230,7 @@ class AddonsDialog(QDialog):
             return
 
         for entry in addons:
-            row = AddonRow(entry, get_installed_version(entry.name))
+            row = AddonRow(entry, entry.installed_version)
             self.rows.append(row)
             self.scroll_layout.addWidget(row)
 
@@ -286,6 +287,6 @@ class AddonsDialog(QDialog):
 
         # Обновить статусы строк
         for row in self.rows:
-            ver = get_installed_version(row.entry.name)
+            ver = detect_installed_version(row.entry)
             if ver == row.entry.version:
                 row.checkbox.setChecked(False)

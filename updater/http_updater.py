@@ -29,7 +29,12 @@ class HTTPUpdater:
 
     def _get_tmp_dir(self) -> str:
         if self._tmp_dir is None:
-            self._tmp_dir = tempfile.mkdtemp(prefix="dreamworld_dl_")
+            # os.replace() cannot move files across Windows volumes.  Keep the
+            # staging directory beside the client so a launcher on D:, E:,
+            # etc. never tries to replace a destination with a file from the
+            # system temp directory on C:.
+            os.makedirs(self.game_dir, exist_ok=True)
+            self._tmp_dir = tempfile.mkdtemp(prefix=".dw_dl_", dir=self.game_dir)
         return self._tmp_dir
 
     def cleanup(self):

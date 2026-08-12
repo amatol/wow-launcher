@@ -59,6 +59,7 @@ class UpdateWorker(QThread):
         self.manifest_url = manifest_url
         self._cancel = False
         self._updater = None
+        self.installed_base_client = False
 
     def cancel(self):
         self._cancel = True
@@ -89,6 +90,7 @@ class UpdateWorker(QThread):
                 if not ok:
                     self.finished_signal.emit(False, message)
                     return
+                self.installed_base_client = True
                 self.log_signal.emit(message)
 
             self.log_signal.emit("Проверка файлов клиента...")
@@ -496,9 +498,32 @@ class MainWindow(QMainWindow):
         self.progress_widget.set_status(
             message, 100 if success else 0
         )
-        self.btn_play.setVisible(True)
         self.btn_cancel.setVisible(False)
+        if success and self.worker and self.worker.installed_base_client:
+            # Do not expose Play between bootstrap extraction and a fresh
+            # check of the files now present on disk.  If that check finds
+            # anything, immediately run the normal updater in this launch.
+            self.progress_widget.set_status("Проверка обновлений установленного клиента...", 0)
+            self.post_bootstrap_check_worker = CheckWorker()
+            self.post_bootstrap_check_worker.check_done.connect(
+                self._on_post_bootstrap_check_done
+            )
+            self.post_bootstrap_check_worker.start()
+            self._refresh_info()
+            return
+
+        self.btn_play.setVisible(True)
         self._set_play_mode(success)
+        self._refresh_info()
+
+    def _on_post_bootstrap_check_done(self, has_updates: bool):
+        if has_updates:
+            self.worker = None
+            self.start_update()
+            return
+        self.btn_play.setVisible(True)
+        self._set_play_mode(True)
+        self.progress_widget.set_status("Клиент актуален. Обновлений нет.", 100)
         self._refresh_info()
 
     def play(self):

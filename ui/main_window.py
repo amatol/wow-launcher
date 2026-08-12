@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QMessageBox,
     QProgressBar, QDialog, QApplication, QFrame
 )
-from PyQt5.QtCore import QThread, pyqtSignal, Qt, QUrl
+from PyQt5.QtCore import QSettings, QThread, pyqtSignal, Qt, QUrl
 from PyQt5.QtGui import QFont, QDesktopServices
 
 from config import Config
@@ -201,7 +201,7 @@ class SelfUpdateDialog(QDialog):
         super().__init__(parent)
         self.manifest = manifest
         self.setWindowTitle("Доступно обновление лаунчера")
-        self.setFixedSize(380, 200)
+        self.setFixedSize(640, 340)
         self._apply_theme()
 
         layout = QVBoxLayout(self)
@@ -214,12 +214,12 @@ class SelfUpdateDialog(QDialog):
             f"Текущая версия: {Config.LAUNCHER_VERSION}"
         )
         label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("color: #e0e0e0; font-size: 13px;")
+        label.setStyleSheet("color: #e0e0e0; font-size: 20px;")
         layout.addWidget(label)
 
         if changelog:
             ch_label = QLabel(f"Что нового:\n{changelog}")
-            ch_label.setStyleSheet("color: #a0a0a0; font-size: 11px;")
+            ch_label.setStyleSheet("color: #a0a0a0; font-size: 17px;")
             ch_label.setWordWrap(True)
             layout.addWidget(ch_label)
 
@@ -232,8 +232,8 @@ class SelfUpdateDialog(QDialog):
         btn_layout = QHBoxLayout()
         self.btn_yes = QPushButton("Обновить")
         self.btn_no = QPushButton("Позже")
-        self.btn_yes.setFixedHeight(34)
-        self.btn_no.setFixedHeight(34)
+        self.btn_yes.setFixedHeight(54)
+        self.btn_no.setFixedHeight(54)
         btn_layout.addWidget(self.btn_yes)
         btn_layout.addWidget(self.btn_no)
         layout.addLayout(btn_layout)
@@ -247,7 +247,7 @@ class SelfUpdateDialog(QDialog):
             QLabel { color: #e0e0e0; }
             QPushButton {
                 background: #16213e; border: 1px solid #0f3460;
-                border-radius: 5px; padding: 6px 16px; font-size: 13px;
+                border-radius: 7px; padding: 10px 22px; font-size: 20px;
                 color: #e0e0e0;
             }
             QPushButton:hover { background: #0f3460; }
@@ -265,10 +265,16 @@ class SelfUpdateDialog(QDialog):
 
 
 class MainWindow(QMainWindow):
+    DEFAULT_WIDTH = 1440
+    DEFAULT_HEIGHT = 800
+    MINIMUM_WIDTH = 720
+    MINIMUM_HEIGHT = 400
+    SETTINGS_GEOMETRY_KEY = "main_window/geometry"
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dreamworld Launcher")
-        self.setFixedSize(720, 400)
+        self.setMinimumSize(self.MINIMUM_WIDTH, self.MINIMUM_HEIGHT)
         self.worker = None
         self.self_update_worker = None
         self.self_update_dialog = None
@@ -280,20 +286,20 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         outer = QVBoxLayout(central)
-        outer.setContentsMargins(12, 12, 12, 12)
-        outer.setSpacing(8)
+        outer.setContentsMargins(24, 24, 24, 24)
+        outer.setSpacing(16)
 
         # --- Верхняя панель: заголовок + инфо ---
         top_bar = QHBoxLayout()
-        top_bar.setSpacing(12)
+        top_bar.setSpacing(24)
 
         title = QLabel("Dreamworld")
-        title.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        title.setFont(QFont("Segoe UI", 28, QFont.Bold))
         title.setStyleSheet("color: #e94560;")
-        title.setFixedHeight(36)
+        title.setFixedHeight(56)
 
         self.info_label = QLabel()
-        self.info_label.setStyleSheet("color: #a0a0a0; font-size: 12px;")
+        self.info_label.setStyleSheet("color: #a0a0a0; font-size: 18px;")
         self.info_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
         top_bar.addWidget(title)
@@ -303,7 +309,7 @@ class MainWindow(QMainWindow):
 
         # --- Основная зона: новости слева, кнопки справа ---
         main_row = QHBoxLayout()
-        main_row.setSpacing(12)
+        main_row.setSpacing(24)
 
         # Новости
         self.news_widget = NewsWidget()
@@ -311,17 +317,17 @@ class MainWindow(QMainWindow):
 
         # Правая колонка с кнопками
         right_panel = QFrame()
-        right_panel.setFixedWidth(180)
-        right_panel.setStyleSheet("QFrame { background: #16213e; border-radius: 8px; }")
+        right_panel.setFixedWidth(320)
+        right_panel.setStyleSheet("QFrame { background: #16213e; border-radius: 12px; }")
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(12, 12, 12, 12)
-        right_layout.setSpacing(10)
+        right_layout.setContentsMargins(24, 24, 24, 24)
+        right_layout.setSpacing(18)
 
         self.btn_play = QPushButton("Играть")
-        self.btn_play.setFixedHeight(46)
+        self.btn_play.setFixedHeight(76)
         self.btn_play.setStyleSheet(
             "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 15px; font-weight: bold; color: white; }"
+            "font-size: 24px; font-weight: bold; color: white; }"
             "QPushButton:hover { background: #ff5570; }"
             "QPushButton:pressed { background: #c81e3f; }"
             "QPushButton:disabled { background: #3a2a3a; color: #777; }"
@@ -330,10 +336,10 @@ class MainWindow(QMainWindow):
         self.btn_play.clicked.connect(self._on_play_clicked)
 
         self.btn_cancel = QPushButton("Отмена")
-        self.btn_cancel.setFixedHeight(46)
+        self.btn_cancel.setFixedHeight(76)
         self.btn_cancel.setStyleSheet(
             "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 15px; font-weight: bold; color: white; }"
+            "font-size: 24px; font-weight: bold; color: white; }"
             "QPushButton:hover { background: #ff5570; }"
             "QPushButton:pressed { background: #c81e3f; }"
         )
@@ -341,11 +347,11 @@ class MainWindow(QMainWindow):
         self.btn_cancel.clicked.connect(self.cancel_update)
 
         self.btn_addons = QPushButton("Аддоны")
-        self.btn_addons.setFixedHeight(40)
+        self.btn_addons.setFixedHeight(60)
         self.btn_addons.clicked.connect(self.open_addons)
 
         self.btn_account = QPushButton("Аккаунт")
-        self.btn_account.setFixedHeight(34)
+        self.btn_account.setFixedHeight(52)
         self.btn_account.clicked.connect(self.open_account)
 
         right_layout.addWidget(self.btn_play)
@@ -362,6 +368,8 @@ class MainWindow(QMainWindow):
         self.progress_widget = ProgressWidget()
         outer.addWidget(self.progress_widget)
 
+        self._restore_window_geometry()
+
         self._refresh_info()
         self._load_news()
         self._start_client_check()
@@ -375,12 +383,42 @@ class MainWindow(QMainWindow):
             QWidget { color: #e0e0e0; }
             QPushButton {
                 background: #16213e; border: 1px solid #0f3460;
-                border-radius: 5px; padding: 6px 16px; font-size: 13px;
+                border-radius: 7px; padding: 10px 22px; font-size: 20px;
             }
             QPushButton:hover { background: #0f3460; }
             QPushButton:pressed { background: #1a1a4e; }
             QPushButton:disabled { background: #1a1a2e; color: #555; }
         """)
+
+    def _restore_window_geometry(self):
+        """Восстановить размер и монитор либо показать окно на основном экране."""
+        saved_geometry = QSettings().value(self.SETTINGS_GEOMETRY_KEY)
+        if saved_geometry and self.restoreGeometry(saved_geometry) and self._is_on_available_screen():
+            return
+
+        screen = QApplication.primaryScreen()
+        if screen is None:
+            self.resize(self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+            return
+
+        available = screen.availableGeometry()
+        width = min(self.DEFAULT_WIDTH, max(self.MINIMUM_WIDTH, int(available.width() * 0.9)))
+        height = min(self.DEFAULT_HEIGHT, max(self.MINIMUM_HEIGHT, int(available.height() * 0.9)))
+        self.resize(width, height)
+        self.move(
+            available.x() + (available.width() - width) // 2,
+            available.y() + (available.height() - height) // 2,
+        )
+
+    def _is_on_available_screen(self):
+        frame = self.frameGeometry()
+        return any(frame.intersects(screen.availableGeometry()) for screen in QApplication.screens())
+
+    def closeEvent(self, event):
+        settings = QSettings()
+        settings.setValue(self.SETTINGS_GEOMETRY_KEY, self.saveGeometry())
+        settings.sync()
+        super().closeEvent(event)
 
     def _refresh_info(self):
         exe_found = check_wow_executable()
@@ -478,13 +516,13 @@ class MainWindow(QMainWindow):
     def open_account(self):
         dialog = QDialog(self)
         dialog.setWindowTitle("Аккаунт")
-        dialog.setFixedSize(360, 180)
+        dialog.setFixedSize(600, 300)
         dialog.setStyleSheet("""
             QDialog { background: #0f0f23; }
             QLabel { color: #e0e0e0; }
             QPushButton {
                 background: #16213e; border: 1px solid #0f3460;
-                border-radius: 5px; padding: 6px 16px; font-size: 13px;
+                border-radius: 7px; padding: 10px 22px; font-size: 20px;
                 color: #e0e0e0;
             }
             QPushButton:hover { background: #0f3460; }
@@ -498,21 +536,21 @@ class MainWindow(QMainWindow):
             "@wotlk_amatol_bot"
         )
         msg.setAlignment(Qt.AlignCenter)
-        msg.setStyleSheet("font-size: 13px;")
+        msg.setStyleSheet("font-size: 20px;")
         layout.addWidget(msg)
 
         btn_layout = QHBoxLayout()
         btn_open = QPushButton("Открыть бота")
-        btn_open.setFixedHeight(36)
+        btn_open.setFixedHeight(56)
         btn_open.setStyleSheet(
             "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 13px; font-weight: bold; color: white; }"
+            "font-size: 20px; font-weight: bold; color: white; }"
             "QPushButton:hover { background: #ff5570; }"
         )
         btn_open.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://t.me/wotlk_amatol_bot")))
 
         btn_cancel = QPushButton("Отмена")
-        btn_cancel.setFixedHeight(36)
+        btn_cancel.setFixedHeight(56)
         btn_cancel.clicked.connect(dialog.reject)
 
         btn_layout.addWidget(btn_open)

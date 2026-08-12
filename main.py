@@ -7,6 +7,7 @@ import os
 # Добавить корень проекта в sys.path, чтобы импорты работали из любой точки
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -19,8 +20,15 @@ def main():
     # При самообновлении не создавать второе окно, пока старый процесс ещё завершается.
     wait_for_update_parent()
 
+    # Эти атрибуты должны быть установлены до создания QApplication. Тогда Qt
+    # использует логические пиксели и системный масштаб каждого монитора.
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
     app = QApplication(sys.argv)
     app.setApplicationName("Dreamworld Launcher")
+    app.setOrganizationName("Dreamworld")
+    app.setOrganizationDomain("wotlk.amatol.blog")
 
     # Иконка приложения
     icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dreamworld.ico")

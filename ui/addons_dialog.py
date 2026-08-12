@@ -61,36 +61,36 @@ class AddonRow(QFrame):
         )
 
         layout = QGridLayout(self)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(6)
 
         self.checkbox = QCheckBox()
-        self.checkbox.setStyleSheet("QCheckBox { color: #e0e0e0; font-size: 20px; font-weight: bold; }")
+        self.checkbox.setStyleSheet("QCheckBox { color: #e0e0e0; font-size: 16px; font-weight: bold; }")
         self.checkbox.setText(entry.name)
         layout.addWidget(self.checkbox, 0, 0)
 
         remote_ver_label = QLabel(f"Сервер: {entry.version}")
-        remote_ver_label.setStyleSheet("color: #a0a0a0; font-size: 17px;")
+        remote_ver_label.setStyleSheet("color: #a0a0a0; font-size: 14px;")
         layout.addWidget(remote_ver_label, 1, 0)
 
         if installed_version:
             status_label = QLabel(f"Установлено: {installed_version}")
             if installed_version != entry.version:
-                status_label.setStyleSheet("color: #e94560; font-size: 17px;")
+                status_label.setStyleSheet("color: #e94560; font-size: 14px;")
                 update_label = QLabel("● Доступно обновление")
-                update_label.setStyleSheet("color: #e94560; font-size: 17px;")
+                update_label.setStyleSheet("color: #e94560; font-size: 14px;")
                 layout.addWidget(update_label, 1, 1)
             else:
-                status_label.setStyleSheet("color: #5cb85c; font-size: 17px;")
+                status_label.setStyleSheet("color: #5cb85c; font-size: 14px;")
             layout.addWidget(status_label, 2, 0)
         else:
             not_installed = QLabel("Не установлен")
-            not_installed.setStyleSheet("color: #a0a0a0; font-size: 17px;")
+            not_installed.setStyleSheet("color: #a0a0a0; font-size: 14px;")
             layout.addWidget(not_installed, 2, 0)
 
         if entry.description:
             desc_label = QLabel(entry.description)
-            desc_label.setStyleSheet("color: #888; font-size: 17px;")
+            desc_label.setStyleSheet("color: #888; font-size: 14px;")
             desc_label.setWordWrap(True)
             layout.addWidget(desc_label, 3, 0, 1, 2)
 
@@ -104,8 +104,8 @@ class AddonsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Аддоны")
-        self.resize(900, 760)
-        self.setMinimumSize(700, 560)
+        self.resize(720, 600)
+        self.setMinimumSize(600, 480)
         self._apply_theme()
 
         self.addons = []
@@ -119,7 +119,7 @@ class AddonsDialog(QDialog):
 
         # Заголовок
         title = QLabel("Управление аддонами")
-        title.setStyleSheet("color: #e94560; font-size: 24px; font-weight: bold;")
+        title.setStyleSheet("color: #e94560; font-size: 19px; font-weight: bold;")
         layout.addWidget(title)
 
         # Зона прокрутки со списком аддонов
@@ -142,17 +142,17 @@ class AddonsDialog(QDialog):
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        self.progress_bar.setFixedHeight(30)
+        self.progress_bar.setFixedHeight(24)
         self.progress_bar.setVisible(False)
         self.progress_bar.setStyleSheet(
             "QProgressBar { background: #16213e; border: 1px solid #0f3460; "
-            "border-radius: 6px; text-align: center; color: white; font-size: 17px; }"
+            "border-radius: 5px; text-align: center; color: white; font-size: 14px; }"
             "QProgressBar::chunk { background: #e94560; border-radius: 3px; }"
         )
         layout.addWidget(self.progress_bar)
 
         self.status_label = QLabel("Загрузка списка аддонов...")
-        self.status_label.setStyleSheet("color: #a0a0a0; font-size: 18px;")
+        self.status_label.setStyleSheet("color: #a0a0a0; font-size: 14px;")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
 
@@ -160,24 +160,24 @@ class AddonsDialog(QDialog):
         btn_layout = QHBoxLayout()
 
         self.btn_select_all = QPushButton("Выбрать все")
-        self.btn_select_all.setFixedHeight(54)
+        self.btn_select_all.setFixedHeight(42)
         self.btn_select_all.clicked.connect(self._select_all)
 
         self.btn_deselect_all = QPushButton("Снять выделение")
-        self.btn_deselect_all.setFixedHeight(54)
+        self.btn_deselect_all.setFixedHeight(42)
         self.btn_deselect_all.clicked.connect(self._deselect_all)
 
         self.btn_install = QPushButton("Установить")
-        self.btn_install.setFixedHeight(54)
+        self.btn_install.setFixedHeight(42)
         self.btn_install.setStyleSheet(
             "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 20px; font-weight: bold; color: white; }"
+            "font-size: 16px; font-weight: bold; color: white; }"
             "QPushButton:hover { background: #ff5570; }"
         )
         self.btn_install.clicked.connect(self._on_install)
 
         self.btn_close = QPushButton("Закрыть")
-        self.btn_close.setFixedHeight(54)
+        self.btn_close.setFixedHeight(42)
         self.btn_close.clicked.connect(self.reject)
 
         btn_layout.addWidget(self.btn_select_all)
@@ -195,13 +195,13 @@ class AddonsDialog(QDialog):
             QLabel { color: #e0e0e0; }
             QPushButton {
                 background: #16213e; border: 1px solid #0f3460;
-                border-radius: 7px; padding: 10px 22px; font-size: 20px;
+                border-radius: 6px; padding: 8px 18px; font-size: 16px;
                 color: #e0e0e0;
             }
             QPushButton:hover { background: #0f3460; }
             QCheckBox { color: #e0e0e0; }
             QCheckBox::indicator {
-                width: 24px; height: 24px;
+                width: 20px; height: 20px;
                 border: 2px solid #0f3460; border-radius: 3px;
                 background: #1a1a2e;
             }

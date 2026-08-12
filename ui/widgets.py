@@ -38,8 +38,8 @@ class NewsWidget(QTextBrowser):
         self.setOpenExternalLinks(True)
         self.setStyleSheet(
             "QTextBrowser { background: #1a1a2e; color: #c0c0c0; "
-            "font-family: 'Segoe UI', sans-serif; font-size: 20px; "
-            "border: 1px solid #0f3460; border-radius: 10px; padding: 14px; }"
+            "font-family: 'Segoe UI', sans-serif; font-size: 16px; "
+            "border: 1px solid #0f3460; border-radius: 8px; padding: 10px; }"
         )
         self._loading()
 
@@ -66,8 +66,8 @@ class NewsWidget(QTextBrowser):
             body = item.get("body", "")
             html_parts.append(
                 f"<div style='margin-bottom:16px;'>"
-                f"<div style='color:#e94560; font-size:24px; font-weight:bold;'>{title}</div>"
-                f"<div style='color:#888; font-size:17px; margin-bottom:10px;'>{date}</div>"
+                f"<div style='color:#e94560; font-size:19px; font-weight:bold;'>{title}</div>"
+                f"<div style='color:#888; font-size:14px; margin-bottom:8px;'>{date}</div>"
                 f"<div style='color:#c0c0c0;'>{body}</div>"
                 f"</div>"
             )
@@ -81,19 +81,19 @@ class ProgressWidget(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(6)
 
         self.label = QLabel("Готово")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("color: #a0a0a0; font-size: 18px;")
+        self.label.setStyleSheet("color: #a0a0a0; font-size: 14px;")
 
         self.bar = QProgressBar()
         self.bar.setRange(0, 100)
         self.bar.setValue(0)
-        self.bar.setFixedHeight(30)
+        self.bar.setFixedHeight(24)
         self.bar.setStyleSheet(
             "QProgressBar { background: #16213e; border: 1px solid #0f3460; "
-            "border-radius: 6px; text-align: center; color: white; font-size: 17px; }"
+            "border-radius: 5px; text-align: center; color: white; font-size: 14px; }"
             "QProgressBar::chunk { background: #e94560; border-radius: 3px; }"
         )
         self.bar.setTextVisible(True)

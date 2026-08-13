@@ -267,12 +267,12 @@ class SelfUpdateDialog(QDialog):
 
 
 class MainWindow(QMainWindow):
-    DEFAULT_WIDTH = 1100
-    DEFAULT_HEIGHT = 620
+    DEFAULT_WIDTH = 1000
+    DEFAULT_HEIGHT = 560
     MINIMUM_WIDTH = 720
     MINIMUM_HEIGHT = 400
-    # A new key intentionally discards the oversized geometry saved by 20260812.
-    SETTINGS_GEOMETRY_KEY = "main_window/geometry_compact"
+    # A new key applies the smaller default once without disabling future restores.
+    SETTINGS_GEOMETRY_KEY = "main_window/geometry_compact_v2"
 
     def __init__(self):
         super().__init__()

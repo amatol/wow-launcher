@@ -94,7 +94,7 @@ config.py               — Config: пути, URL, таймауты, верси�
 manifest.json           — пример манифеста обновлений клиента
 launcher_manifest.json  — пример манифеста обновлений лаунчера
 news.json               — пример новостей сервера
-generate_icon.py        — генерация dreamworld.ico (D, золото, 16–1024px)
+generate_icon.py        — сборка dreamworld.ico из launcher_icon.png (16–1024px)
 Dreamworld.spec         — PyInstaller spec (onefile, windowed, icon)
 core/
   version.py            — поиск/запуск Dreamworld.exe, версии патча
@@ -109,6 +109,7 @@ ui/
   widgets.py            — NewsWidget, NewsWorker, ProgressWidget
   addons_dialog.py      — диалог управления аддонами (чекбоксы, установка, прогресс)
 assets/
+  launcher_icon.png     — эталонный RGBA-исходник иконки 2048×2048
   dreamworld.ico        — иконка (9 размеров, PNG-в-ICO для >256)
 .github/workflows/
   build.yml             — CI: windows-latest, Python 3.10, PyInstaller
@@ -147,7 +148,7 @@ assets/
 
 - **venv**: `.venv/` в корне, НЕ `--break-system-packages`
 - **Кодировка**: `PYTHONUTF8=1` в CI для кириллицы в print
-- **Иконка**: генерируется `generate_icon.py`, не хардкодится; Pillow не пишет ICO >256, поэтому PNG-в-ICO вручную через `struct`
+- **Иконка**: эталон `assets/launcher_icon.png`, из него `generate_icon.py` собирает `dreamworld.ico`; Pillow не пишет ICO >256, поэтому PNG-в-ICO упаковывается вручную через `struct`
 - **GUI**: тёмная тема `#0f0f23`, акцент `#e94560`, шрифт Segoe UI 18 bold
 - **Имена**: игровой клиент = `Wow.exe`, лаунчер = `Dreamworld.exe`
 - **Версии лаунчера**: YYYYMMDD; не более одного выпуска в день, числовое сравнение

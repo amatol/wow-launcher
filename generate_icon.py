@@ -1,105 +1,25 @@
-"""
-Генерация иконки в стиле WoW для Dreamworld.exe.
-Золотая буква 'D' на тёмно-синем фоне с декоративной рамкой.
-
-Pillow не сохраняет размеры > 256 в ICO, поэтому для 512 и 1024
-мы упаковываем PNG вручную в формат ICO (PNG-в-ICO).
-"""
+"""Сборка многослойной Windows-иконки из launcher_icon.png."""
 import io
 import os
 import struct
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 
 ICO_MAX_PIL = 256  # Pillow сохраняет ICO максимум до этого размера
 
 
-def find_font(size):
-    candidates = [
-        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/Library/Fonts/Arial Bold.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "C:/Windows/Fonts/arialbd.ttf",
-    ]
-    for path in candidates:
-        if os.path.isfile(path):
-            try:
-                return ImageFont.truetype(path, size)
-            except Exception:
-                continue
-    return ImageFont.load_default()
+def load_source(path: str) -> Image.Image:
+    """Загрузить квадратный RGBA-исходник без изменения его дизайна."""
+    with Image.open(path) as source:
+        source.load()
+        if source.width != source.height:
+            raise ValueError(f"Icon source must be square: {source.size}")
+        return source.convert("RGBA")
 
 
-def draw_icon(size: int) -> Image.Image:
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    # Тёмно-синий фон с градиентом
-    bg_outer = (15, 20, 40, 255)
-    bg_inner = (30, 40, 80, 255)
-
-    margin = max(1, size // 32)
-    draw.rounded_rectangle(
-        [margin, margin, size - margin, size - margin],
-        radius=size // 8,
-        fill=bg_outer,
-    )
-
-    # Градиент (упрощённый — концентрические прямоугольники)
-    steps = size // 4
-    for i in range(steps):
-        t = i / steps
-        r = int(bg_inner[0] * (1 - t) + bg_outer[0] * t)
-        g = int(bg_inner[1] * (1 - t) + bg_outer[1] * t)
-        b = int(bg_inner[2] * (1 - t) + bg_outer[2] * t)
-        inset = margin + size // 16 + i * (size // 4) // steps
-        draw.rounded_rectangle(
-            [inset, inset, size - inset, size - inset],
-            radius=max(2, size // 8 - i),
-            fill=(r, g, b, 255),
-        )
-
-    # Золотая рамка
-    gold = (200, 160, 60, 255)
-    gold_light = (255, 215, 120, 255)
-    border = max(1, size // 48)
-    draw.rounded_rectangle(
-        [margin, margin, size - margin, size - margin],
-        radius=size // 8,
-        outline=gold,
-        width=border,
-    )
-    # Внутренняя рамка (тоньше, светлее)
-    inner_margin = margin + border + max(1, size // 64)
-    draw.rounded_rectangle(
-        [inner_margin, inner_margin, size - inner_margin, size - inner_margin],
-        radius=max(2, size // 8 - border),
-        outline=gold_light,
-        width=max(1, border // 2),
-    )
-
-    # Буква D
-    font_size = int(size * 0.6)
-    font = find_font(font_size)
-
-    text = "D"
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    tx = (size - tw) // 2 - bbox[0]
-    ty = (size - th) // 2 - bbox[1]
-
-    # Тень
-    shadow_offset = max(1, size // 64)
-    draw.text((tx + shadow_offset, ty + shadow_offset), text,
-              fill=(0, 0, 0, 160), font=font)
-
-    # Буква золотым
-    draw.text((tx, ty), text, fill=gold_light, font=font)
-
-    return img
+def resize_icon(source: Image.Image, size: int) -> Image.Image:
+    """Масштабировать исходник с качественной фильтрацией и alpha-каналом."""
+    return source.resize((size, size), Image.Resampling.LANCZOS)
 
 
 def _png_bytes(img: Image.Image) -> bytes:
@@ -109,7 +29,7 @@ def _png_bytes(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 
-def _build_ico(sizes: list, path: str):
+def _build_ico(source: Image.Image, sizes: list, path: str):
     """
     Собрать ICO вручную, поддерживая размеры > 256 через PNG-в-ICO.
     Формат ICO: ICONDIR + ICONDIRENTRY[] + данные.
@@ -118,11 +38,11 @@ def _build_ico(sizes: list, path: str):
     pil_sizes = [s for s in sizes if s <= ICO_MAX_PIL]
     big_sizes = [s for s in sizes if s > ICO_MAX_PIL]
 
-    # Сгенерировать все изображения
+    # Собрать все размеры из одного эталонного исходника.
     entries = []  # (width, height, data_bytes, is_png)
 
     for s in pil_sizes:
-        img = draw_icon(s)
+        img = resize_icon(source, s)
         buf = io.BytesIO()
         img.save(buf, format="ICO", sizes=[(s, s)])
         ico_data = buf.getvalue()
@@ -134,7 +54,7 @@ def _build_ico(sizes: list, path: str):
             entries.append((s, s, raw, False))
 
     for s in big_sizes:
-        img = draw_icon(s)
+        img = resize_icon(source, s)
         png_data = _png_bytes(img)
         entries.append((s, s, png_data, True))
 
@@ -163,19 +83,21 @@ def _build_ico(sizes: list, path: str):
         f.write(data_blob)
 
 
-def generate_icon(path: str):
+def generate_icon(source_path: str, output_path: str):
     """
     Сгенерировать .ico с разрешениями 16..1024.
     Размеры 512 и 1024 упаковываются как PNG-в-ICO.
     """
     sizes = [16, 24, 32, 48, 64, 128, 256, 512, 1024]
-    _build_ico(sizes, path)
+    source = load_source(source_path)
+    _build_ico(source, sizes, output_path)
 
-    print(f"Icon saved: {path}")
-    print(f"  File size: {os.path.getsize(path)} bytes")
+    print(f"Icon source: {source_path} ({source.width}x{source.height})")
+    print(f"Icon saved: {output_path}")
+    print(f"  File size: {os.path.getsize(output_path)} bytes")
 
     # Проверка структуры
-    with open(path, "rb") as f:
+    with open(output_path, "rb") as f:
         data = f.read()
     _r, _t, count = struct.unpack_from("<HHH", data, 0)
     print(f"  ICO frames: {count}")
@@ -188,11 +110,15 @@ def generate_icon(path: str):
         off += 16
 
     # PNG 1024 для предпросмотра
-    preview = draw_icon(1024)
-    preview_path = os.path.splitext(path)[0] + "_preview.png"
+    preview = resize_icon(source, 1024)
+    preview_path = os.path.splitext(output_path)[0] + "_preview.png"
     preview.save(preview_path)
     print(f"Preview: {preview_path}")
 
 
 if __name__ == "__main__":
-    generate_icon(os.path.join(os.path.dirname(__file__), "assets", "dreamworld.ico"))
+    assets_dir = os.path.join(os.path.dirname(__file__), "assets")
+    generate_icon(
+        os.path.join(assets_dir, "launcher_icon.png"),
+        os.path.join(assets_dir, "dreamworld.ico"),
+    )

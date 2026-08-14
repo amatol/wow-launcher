@@ -46,6 +46,8 @@ Telegram-ботом из `/root/telegrambot`.
   `79878da994a0a25b6dc3dbb4efcbd08ccae94fbba5b1f25746249cd8c5df8ea4`;
   серверная и полностью скачанная HTTPS-копии совпали побайтно. Ошибочная ревизия
   сохранена как `/srv/dreamworld-launcher/releases/manifest-20260814-without-dreamquestmap-tombstone.json`.
+  Windows CI run `31781999364` успешно повторил тесты, собрал EXE и обновил
+  единственный хранимый артефакт.
 
 - Опубликован клиентский манифест версии `20260814` с обновлением обязательного
   DreamQuestMap. Относительно версии `20260813` изменились ровно два файла:

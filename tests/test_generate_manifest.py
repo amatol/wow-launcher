@@ -27,6 +27,37 @@ class GenerateManifestTests(unittest.TestCase):
             result = build_manifest(root, "20260808", "https://example.test", previous)
             self.assertEqual(result["removed_files"], ["Interface/AddOns/Old/Old.toc"])
 
+    def test_carries_tombstones_forward_for_clients_that_skip_a_release(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "Wow.exe").write_bytes(b"wow")
+            previous = {
+                "files": [{"path": "Wow.exe"}],
+                "removed_files": ["Interface/AddOns/DreamQuestMap/README.md"],
+            }
+
+            result = build_manifest(root, "20260814", "https://example.test", previous)
+
+            self.assertEqual(
+                result["removed_files"],
+                ["Interface/AddOns/DreamQuestMap/README.md"],
+            )
+
+    def test_drops_tombstone_when_path_is_published_again(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            readme = root / "Interface/AddOns/DreamQuestMap/README.md"
+            readme.parent.mkdir(parents=True)
+            readme.write_text("published again")
+            previous = {
+                "files": [],
+                "removed_files": ["Interface/AddOns/DreamQuestMap/README.md"],
+            }
+
+            result = build_manifest(root, "20260814", "https://example.test", previous)
+
+            self.assertEqual(result["removed_files"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

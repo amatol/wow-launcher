@@ -42,7 +42,13 @@ def build_manifest(source: Path, version: str, base_url: str, previous: dict = N
     if previous is not None:
         current_paths = {entry["path"] for entry in files}
         previous_paths = {entry["path"] for entry in previous.get("files", [])}
-        manifest["removed_files"] = sorted(previous_paths - current_paths)
+        # Tombstones must survive subsequent releases.  A client can skip any
+        # number of manifests, so keeping only the immediately removed paths
+        # would leave obsolete files behind once the next release is published.
+        previous_removed = set(previous.get("removed_files", []))
+        manifest["removed_files"] = sorted(
+            (previous_removed | (previous_paths - current_paths)) - current_paths
+        )
     return manifest
 
 

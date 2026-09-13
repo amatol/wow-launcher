@@ -61,6 +61,13 @@ python tools/generate_launcher_manifest.py dist/Dreamworld.exe \
 
 ## Аддоны
 
+Обязательные аддоны (включая DungeonClear) устанавливаются непосредственно в
+`/opt/azerothcore/client/Interface/AddOns` и включаются в основной
+`manifest.json`. Их получают все клиенты при обычном обновлении, независимо
+от выбора в окне дополнительных аддонов. Для DungeonClear копируются только
+`DungeonClear.toc`, `DungeonClear.lua`, `Locale.lua`, `EventNames-ruRU.lua`
+и `LICENSE` в папку `DungeonClear`; README и тесты не публикуются.
+
 Аддоны публикуются как пакеты в `/opt/azerothcore/addons`. Обычный пакет — это
 папка с верхнеуровневым `.toc`. Если один аддон состоит из нескольких папок,
 создать общую папку пакета, а внутри разместить компоненты с собственными

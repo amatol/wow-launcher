@@ -7,6 +7,37 @@ from updater.bootstrap import BootstrapInstaller
 
 
 class BootstrapInstallerTests(unittest.TestCase):
+    def test_resume_keeps_partial_from_same_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installer = BootstrapInstaller(directory)
+            archive = Path(directory) / installer.ARCHIVE_NAME
+            installer._prepare_archive("https://disk.yandex.ru/d/new", 100, archive)
+            archive.write_bytes(b"partial")
+            installer._prepare_archive("https://disk.yandex.ru/d/new", 100, archive)
+            self.assertEqual(archive.read_bytes(), b"partial")
+
+    def test_changed_source_or_size_discards_old_partial(self):
+        for new_url, new_size in [("https://disk.yandex.ru/d/new", 100),
+                                  ("https://disk.yandex.ru/d/old", 200)]:
+            with self.subTest(url=new_url, size=new_size), tempfile.TemporaryDirectory() as directory:
+                installer = BootstrapInstaller(directory)
+                archive = Path(directory) / installer.ARCHIVE_NAME
+                installer._prepare_archive("https://disk.yandex.ru/d/old", 100, archive)
+                archive.write_bytes(b"old partial")
+                installer._prepare_archive(new_url, new_size, archive)
+                self.assertFalse(archive.exists())
+
+    def test_legacy_or_invalid_source_discards_unidentified_partial(self):
+        for metadata in [None, "invalid JSON"]:
+            with self.subTest(metadata=metadata), tempfile.TemporaryDirectory() as directory:
+                installer = BootstrapInstaller(directory)
+                archive = Path(directory) / installer.ARCHIVE_NAME
+                archive.write_bytes(b"old partial")
+                if metadata is not None:
+                    (Path(directory) / installer.SOURCE_NAME).write_text(metadata)
+                installer._prepare_archive("https://disk.yandex.ru/d/new", 100, archive)
+                self.assertFalse(archive.exists())
+
     def test_finds_client_inside_single_top_level_folder(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

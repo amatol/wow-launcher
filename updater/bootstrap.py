@@ -1,4 +1,5 @@
 """Первоначальная установка клиента из публичного архива Яндекс Диска."""
+import json
 import os
 import shutil
 import stat
@@ -48,6 +49,7 @@ class BootstrapInstaller:
     """Докачать, проверить структуру и распаковать базовый клиент."""
 
     ARCHIVE_NAME = ".dreamworld_client.zip.part"
+    SOURCE_NAME = ".dreamworld_client.source.json"
     STAGING_NAME = ".dreamworld_client_extract"
     INCOMPLETE_NAME = ".dreamworld_bootstrap_incomplete"
 
@@ -65,6 +67,7 @@ class BootstrapInstaller:
         incomplete = self.game_dir / self.INCOMPLETE_NAME
         try:
             href, expected_size = resolve_yandex_download(public_url)
+            self._prepare_archive(public_url, expected_size, archive)
             self._ensure_space(expected_size, archive)
             self._download_resumable(href, archive, expected_size)
             if self._cancel:
@@ -79,12 +82,29 @@ class BootstrapInstaller:
             if not self._has_client_layout(self.game_dir):
                 raise ValueError("После распаковки не найдены Wow.exe и каталог Data")
             archive.unlink(missing_ok=True)
+            (self.game_dir / self.SOURCE_NAME).unlink(missing_ok=True)
             shutil.rmtree(staging, ignore_errors=True)
             incomplete.unlink(missing_ok=True)
             return True, "Базовый клиент установлен. Проверка актуальности..."
         except Exception as error:
             shutil.rmtree(staging, ignore_errors=True)
             return False, f"Не удалось установить клиент: {error}"
+
+    def _prepare_archive(self, public_url: str, expected_size: int, archive: Path):
+        """Продолжать только загрузку из того же публичного источника."""
+        source = self.game_dir / self.SOURCE_NAME
+        identity = {"public_url": public_url, "size": expected_size}
+        try:
+            previous = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            previous = None
+        if previous != identity:
+            # Старые версии не записывали источник .part: такой файл тоже
+            # нельзя дополнять байтами нового архива, даже при равном размере.
+            archive.unlink(missing_ok=True)
+        temporary = source.with_suffix(".tmp")
+        temporary.write_text(json.dumps(identity), encoding="utf-8")
+        os.replace(temporary, source)
 
     def _ensure_space(self, expected_size: int, archive: Path):
         existing = archive.stat().st_size if archive.is_file() else 0

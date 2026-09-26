@@ -26,7 +26,7 @@ class Config:
 
     # Публичная ссылка на базовый архив клиента. Её источником является
     # актуальная запись «Скачать клиент» в Telegram-боте.
-    CLIENT_ARCHIVE_PUBLIC_URL = "https://disk.yandex.ru/d/OI20zyyac6kU_Q"
+    CLIENT_ARCHIVE_PUBLIC_URL = "https://disk.yandex.ru/d/qysMkH29wBZrIw"
 
     # API Яндекс Диска выдаёт временный прямой URL для публичной ссылки.
     YANDEX_DOWNLOAD_API_URL = "https://cloud-api.yandex.net/v1/disk/public/resources/download"
@@ -60,7 +60,7 @@ class Config:
 
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
-    LAUNCHER_VERSION = "20260815"
+    LAUNCHER_VERSION = "20260926"
 
     # URL манифеста обновлений лаунчера (JSON)
     LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"

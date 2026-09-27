@@ -28,6 +28,14 @@
   клиент и службы не менялись. Перед публикацией выставить фактическую
   московскую дату, собрать EXE и проверить Windows вручную.
 - Текущие дизайнерские решения: PRODUCT.md, DESIGN.md, .impeccable/design.json.
+- Коммиты 4e457e0 (интерфейс) и d29f781 (концевой пробел лицензии)
+  отправлены в origin/main. Windows CI 36349692265 для d29f781 успешно
+  прошёл тесты и сборку (первый CI 36349670045 также успешен).
+  gh run download 36349692265 --name Dreamworld-exe --dir /mnt/data/dreamworld-preview
+  сохранил проверочный EXE: PE x64, 42 119 726 байт; в архиве найдены
+  northrend.png, Cinzel.ttf, OFL-Cinzel.txt, check.svg. SHA-256:
+  a79c8312f08e83f5dadb87f414fff286021fbb49b5cabf4d4529604a36e8ab17.
+  EXE не запускался на реальной Windows и не опубликован игрокам.
 
 ## DreamProgression в обновлении клиента — 27.09.2026
 

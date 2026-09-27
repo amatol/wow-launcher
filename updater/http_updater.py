@@ -8,6 +8,8 @@ import hashlib
 import tempfile
 from typing import Callable, List
 
+import requests
+
 from config import Config
 from updater.manifest import FileEntry, Manifest, remove_obsolete_files
 from updater.net_utils import download_with_retries
@@ -23,6 +25,7 @@ class HTTPUpdater:
         self.progress_cb = progress_cb or (lambda *a: None)
         self._cancel = False
         self._tmp_dir = None
+        self._session = None
 
     def cancel(self):
         self._cancel = True
@@ -67,6 +70,7 @@ class HTTPUpdater:
             expected_sha256=entry.sha256,
             progress_cb=lambda d, t, msg: self.progress_cb(0, 0, d, t, f"{entry.path}: {msg}"),
             cancel_check=lambda: self._cancel,
+            session=self._session,
         )
 
         if not ok:
@@ -88,30 +92,35 @@ class HTTPUpdater:
 
     def apply_all(self, files: List[FileEntry]) -> tuple:
         """Скачать и применить все файлы. Возвращает (успех, кол-во)."""
-        total = len(files)
-        success_count = 0
-        for i, entry in enumerate(files):
-            if self._cancel:
-                break
-            dest = os.path.join(self.game_dir, entry.path)
-            self.progress_cb(i, total, 0, entry.size, f"({i+1}/{total}) {entry.path}")
+        try:
+            with requests.Session() as session:
+                self._session = session
+                total = len(files)
+                success_count = 0
+                for i, entry in enumerate(files):
+                    if self._cancel:
+                        break
+                    dest = os.path.join(self.game_dir, entry.path)
+                    self.progress_cb(i, total, 0, entry.size, f"({i+1}/{total}) {entry.path}")
 
-            # Бэкап существующего файла (на случай отката)
-            backup_path = None
-            if os.path.isfile(dest):
-                backup_path = dest + ".bak"
-                shutil.copy2(dest, backup_path)
+                    # Бэкап существующего файла (на случай отката)
+                    backup_path = None
+                    if os.path.isfile(dest):
+                        backup_path = dest + ".bak"
+                        shutil.copy2(dest, backup_path)
 
-            if self.download_file(entry, dest):
-                success_count += 1
-                if backup_path and os.path.isfile(backup_path):
-                    os.remove(backup_path)
-            else:
-                if backup_path and os.path.isfile(backup_path):
-                    shutil.move(backup_path, dest)
+                    if self.download_file(entry, dest):
+                        success_count += 1
+                        if backup_path and os.path.isfile(backup_path):
+                            os.remove(backup_path)
+                    else:
+                        if backup_path and os.path.isfile(backup_path):
+                            shutil.move(backup_path, dest)
 
-        ok = success_count == total and not self._cancel
-        if ok:
-            remove_obsolete_files(self.manifest, self.game_dir)
-        self.cleanup()
-        return (ok, success_count)
+                ok = success_count == total and not self._cancel
+                if ok:
+                    remove_obsolete_files(self.manifest, self.game_dir)
+                return (ok, success_count)
+        finally:
+            self._session = None
+            self.cleanup()

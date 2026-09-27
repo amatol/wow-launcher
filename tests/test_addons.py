@@ -18,6 +18,8 @@ class _Response:
         self.headers = {"Content-Length": str(len(content))}
     def raise_for_status(self): pass
     def json(self): return self._data
+    def close(self): pass
+
     def iter_content(self, chunk_size):
         yield self._content
 
@@ -72,7 +74,7 @@ class AddonsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "AddOns")), \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")), \
-             patch("updater.addons.requests.get", return_value=_Response(content=payload)):
+             patch("requests.Session.get", return_value=_Response(content=payload)):
             self.assertTrue(install_addon(entry))
             self.assertEqual((Path(directory) / "AddOns/MyAddon/MyAddon.toc").read_bytes(), payload)
 
@@ -86,7 +88,7 @@ class AddonsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "Interface/AddOns")), \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")), \
-             patch("updater.addons.requests.get", return_value=_Response(content=payload)):
+             patch("requests.Session.get", return_value=_Response(content=payload)):
             ok, count, errors = install_selected([entry], lambda done, total, msg: progress.append((done, total, msg)))
         self.assertTrue(ok)
         self.assertEqual(count, 1)
@@ -98,7 +100,7 @@ class AddonsTests(unittest.TestCase):
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(Path(directory) / "Interface/AddOns")), \
              patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(Path(directory) / ".launcher_addons")), \
              patch("updater.net_utils._retry_delay", return_value=True), \
-             patch("updater.addons.requests.get", return_value=_Response(content=b"bad")):
+             patch("requests.Session.get", return_value=_Response(content=b"bad")):
             ok, count, errors = install_selected([entry])
         self.assertFalse(ok)
         self.assertEqual(count, 0)
@@ -136,7 +138,7 @@ class AddonsTests(unittest.TestCase):
             state_file = root / "client/.launcher_addons"
             with patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_DIR", str(addons_dir)), \
                  patch.object(__import__("updater.addons", fromlist=["Config"]).Config, "ADDONS_STATE_FILE", str(state_file)), \
-                 patch("updater.addons.requests.get", side_effect=lambda url, **kwargs: responses[url]):
+                 patch("requests.Session.get", side_effect=lambda url, **kwargs: responses[url]):
                 self.assertTrue(install_addon(entry))
                 self.assertEqual((addons_dir / "DBM-Core/DBM-Core.toc").read_bytes(), core_payload)
                 self.assertEqual((addons_dir / "DBM-GUI/DBM-GUI.toc").read_bytes(), gui_payload)

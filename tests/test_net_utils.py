@@ -19,11 +19,29 @@ class _Response:
         if self.status_code >= 400:
             raise requests.HTTPError(f"{self.status_code}")
 
+    def close(self): pass
+
     def iter_content(self, chunk_size):
         yield self.content
 
 
 class NetworkRetryTests(unittest.TestCase):
+    def test_response_closed_on_success_http_error_and_cancel(self):
+        for outcome in ("success", "http_error", "cancel"):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as directory:
+                response = _Response(b"data", 404 if outcome == "http_error" else 200)
+                checks = iter((False, outcome == "cancel"))
+                with patch("updater.net_utils.requests.get", return_value=response), \
+                        patch.object(response, "close") as close:
+                    ok, error = download_with_retries(
+                        "https://example/file", os.path.join(directory, "file"),
+                        cancel_check=lambda: next(checks, False),
+                    )
+                self.assertEqual(ok, outcome == "success")
+                close.assert_called_once()
+                if outcome == "cancel":
+                    self.assertEqual(error, "отменено")
+
     def test_retries_connection_error_then_verifies_download(self):
         payload = b"verified"
         with tempfile.TemporaryDirectory() as directory:

@@ -186,8 +186,13 @@ def install_addon(
     entry: AddonEntry,
     progress_cb: ProgressCallback = None,
     error_cb: ErrorCallback = None,
+    session: Optional[requests.Session] = None,
 ) -> bool:
     """Скачать проверенные файлы каталога и атомарно установить аддон."""
+    if session is None:
+        with requests.Session() as owned_session:
+            return install_addon(entry, progress_cb, error_cb, session=owned_session)
+
     os.makedirs(Config.ADDONS_DIR, exist_ok=True)
     # Keep the staging path short: deep addon trees can otherwise exceed the
     # legacy Windows MAX_PATH limit even though their final paths are valid.
@@ -209,6 +214,7 @@ def install_addon(
                 dest_path=target,
                 expected_size=item.size,
                 expected_sha256=item.sha256,
+                session=session,
                 progress_cb=lambda d, t, msg: progress_cb and progress_cb(
                     downloaded_total + d, entry.size, f"Скачивание {entry.name}..."
                 ),
@@ -278,14 +284,15 @@ def install_selected(addons: List[AddonEntry], progress_cb: ProgressCallback = N
     completed_bytes = 0
     success = 0
     errors = []
-    for i, addon in enumerate(addons):
-        prefix = f"({i+1}/{total})"
+    with requests.Session() as session:
+        for i, addon in enumerate(addons):
+            prefix = f"({i+1}/{total})"
 
-        def report(downloaded, _addon_total, message, base=completed_bytes):
-            progress_cb and progress_cb(base + downloaded, total_bytes, f"{prefix} {message}")
+            def report(downloaded, _addon_total, message, base=completed_bytes):
+                progress_cb and progress_cb(base + downloaded, total_bytes, f"{prefix} {message}")
 
-        if install_addon(addon, report, errors.append):
-            success += 1
-            completed_bytes += addon.size
-            progress_cb and progress_cb(completed_bytes, total_bytes, f"{prefix} OK: {addon.name}")
+            if install_addon(addon, report, errors.append, session=session):
+                success += 1
+                completed_bytes += addon.size
+                progress_cb and progress_cb(completed_bytes, total_bytes, f"{prefix} OK: {addon.name}")
     return (success == total, success, errors)

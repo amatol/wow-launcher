@@ -24,6 +24,7 @@ def download_with_retries(
     progress_cb: ProgressCallback = None,
     cancel_check: Callable[[], bool] = None,
     max_retries: int = MAX_RETRIES,
+    session: Optional[requests.Session] = None,
 ) -> Tuple[bool, str]:
     """
     Скачать файл с ретраями. Возвращает (успех, сообщение_об_ошибке).
@@ -37,8 +38,10 @@ def download_with_retries(
         if cancel_check and cancel_check():
             return False, "отменено"
 
+        resp = None
         try:
-            resp = requests.get(url, stream=True, timeout=Config.HTTP_TIMEOUT)
+            client = session if session is not None else requests
+            resp = client.get(url, stream=True, timeout=Config.HTTP_TIMEOUT)
             resp.raise_for_status()
 
             total = int(resp.headers.get("Content-Length", expected_size or 0))
@@ -90,6 +93,10 @@ def download_with_retries(
                 return False, last_error
         except Exception as e:
             last_error = f"ошибка: {e}"
+
+        finally:
+            if resp is not None:
+                resp.close()
 
         if attempt < max_retries:
             if progress_cb:

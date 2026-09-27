@@ -16,6 +16,7 @@ Cinzel: https://github.com/google/fonts/tree/main/ofl/cinzel,
 ветка main, проверенная ревизия 23e54b51ddffbc7713c583748e3bd86f62b1fa4a.
 Исходный Cinzel[wght].ttf сохранён как fonts/Cinzel.ttf без изменения;
 лицензия SIL Open Font License 1.1 — fonts/OFL-Cinzel.txt, поставляется с EXE.
+В тексте лицензии удалён один концевой пробел, содержание сохранено.
 
 ## Векторный флажок
 

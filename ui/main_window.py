@@ -293,10 +293,10 @@ class MainWindow(QMainWindow):
         outer.setSpacing(12)
 
         # --- Верхняя панель: заголовок + инфо ---
-        top_bar = QHBoxLayout()
-        top_bar.setSpacing(18)
+        top_bar = QVBoxLayout()
+        top_bar.setSpacing(0)
 
-        title = QLabel("Dreamworld")
+        title = QLabel("Wrath of the Lich King AI")
         title.setFont(QFont("Segoe UI", 22, QFont.Bold))
         title.setStyleSheet("color: #e94560;")
         title.setFixedHeight(44)
@@ -306,7 +306,6 @@ class MainWindow(QMainWindow):
         self.info_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
         top_bar.addWidget(title)
-        top_bar.addStretch()
         top_bar.addWidget(self.info_label)
         outer.addLayout(top_bar)
 

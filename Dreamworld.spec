@@ -16,6 +16,9 @@ a = Analysis(
     binaries=[],
     datas=[
         ('assets/dreamworld.ico', 'assets'),
+        ('assets/northrend.png', 'assets'),
+        ('assets/check.svg', 'assets'),
+        ('assets/fonts', 'assets/fonts'),
         ('manifest.json', '.'),
         ('launcher_manifest.json', '.'),
         ('news.json', '.'),

@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QProgressBar, QDialog, QApplication, QFrame
 )
 from PyQt5.QtCore import QSettings, QThread, pyqtSignal, Qt, QUrl
-from PyQt5.QtGui import QFont, QDesktopServices
+from PyQt5.QtGui import QDesktopServices
 
 from config import Config
 from core.version import check_wow_executable, launch_wow, get_current_version, set_current_version
@@ -25,6 +25,7 @@ from updater.http_updater import HTTPUpdater
 from updater.bootstrap import BootstrapInstaller
 from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
 from ui.addons_dialog import AddonsDialog
+from ui.theme import STYLESHEET, LandscapeWidget, load_display_font
 
 
 class CheckWorker(QThread):
@@ -188,7 +189,8 @@ class SelfUpdateDialog(QDialog):
         super().__init__(parent)
         self.manifest = manifest
         self.setWindowTitle("Доступно обновление лаунчера")
-        self.setFixedSize(500, 260)
+        self.resize(540, 320)
+        self.setMinimumSize(480, 260)
         self._apply_theme()
 
         layout = QVBoxLayout(self)
@@ -201,12 +203,12 @@ class SelfUpdateDialog(QDialog):
             f"Текущая версия: {Config.LAUNCHER_VERSION}"
         )
         label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("color: #e0e0e0; font-size: 16px;")
+        label.setStyleSheet("color: #e4edf2; font-size: 16px;")
         layout.addWidget(label)
 
         if changelog:
             ch_label = QLabel(f"Что нового:\n{changelog}")
-            ch_label.setStyleSheet("color: #a0a0a0; font-size: 14px;")
+            ch_label.setStyleSheet("color: #b7cedd; font-size: 14px;")
             ch_label.setWordWrap(True)
             layout.addWidget(ch_label)
 
@@ -225,25 +227,12 @@ class SelfUpdateDialog(QDialog):
         btn_layout.addWidget(self.btn_no)
         layout.addLayout(btn_layout)
 
+        self.btn_yes.setProperty("role", "primary")
         self.btn_yes.clicked.connect(self.accept)
         self.btn_no.clicked.connect(self.reject)
 
     def _apply_theme(self):
-        self.setStyleSheet("""
-            QDialog { background: #0f0f23; }
-            QLabel { color: #e0e0e0; }
-            QPushButton {
-                background: #16213e; border: 1px solid #0f3460;
-                border-radius: 6px; padding: 8px 18px; font-size: 16px;
-                color: #e0e0e0;
-            }
-            QPushButton:hover { background: #0f3460; }
-            QProgressBar {
-                background: #16213e; border: 1px solid #0f3460;
-                border-radius: 4px; text-align: center; color: white;
-            }
-            QProgressBar::chunk { background: #0f3460; border-radius: 3px; }
-        """)
+        self.setStyleSheet(STYLESHEET)
 
     def set_progress(self, downloaded: int, total: int):
         self.progress_bar.setVisible(True)
@@ -271,89 +260,85 @@ class MainWindow(QMainWindow):
 
         self._apply_dark_theme()
 
-        central = QWidget()
+        load_display_font()
+        central = LandscapeWidget()
         self.setCentralWidget(central)
         outer = QVBoxLayout(central)
-        outer.setContentsMargins(18, 18, 18, 18)
-        outer.setSpacing(12)
+        outer.setContentsMargins(28, 22, 28, 18)
+        outer.setSpacing(14)
 
-        # --- Верхняя панель: заголовок + инфо ---
-        top_bar = QVBoxLayout()
-        top_bar.setSpacing(0)
+        # Заголовок остаётся текстом: чёткий при системном масштабировании.
+        self.title = QLabel("Wrath of the\nLich King AI")
+        self.title.setObjectName("gameTitle")
+        self.title.setStyleSheet(
+            "font-family: 'Cinzel'; font-size: 34px; color: #e4edf2;"
+        )
+        self.title.setAccessibleName("Wrath of the Lich King AI")
+        outer.addWidget(self.title)
 
-        title = QLabel("Wrath of the Lich King AI")
-        title.setFont(QFont("Segoe UI", 22, QFont.Bold))
-        title.setStyleSheet("color: #e94560;")
-        title.setFixedHeight(44)
+        self.subtitle = subtitle = QLabel("Мир Азерота. Ваше приключение.")
+        subtitle.setStyleSheet("color: #b7cedd; font-size: 14px;")
+        outer.addWidget(subtitle)
 
-        self.info_label = QLabel()
-        self.info_label.setStyleSheet("color: #a0a0a0; font-size: 14px;")
-        self.info_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-
-        top_bar.addWidget(title)
-        top_bar.addWidget(self.info_label)
-        outer.addLayout(top_bar)
-
-        # --- Основная зона: новости слева, кнопки справа ---
         main_row = QHBoxLayout()
-        main_row.setSpacing(18)
-
-        # Новости
+        main_row.setSpacing(28)
+        news_panel = QFrame()
+        news_panel.setObjectName("newsPanel")
+        news_panel.setStyleSheet(
+            "QFrame#newsPanel { background: rgba(9, 21, 33, 220); "
+            "border: 1px solid #304657; border-radius: 6px; }"
+        )
+        news_layout = QVBoxLayout(news_panel)
+        news_layout.setContentsMargins(18, 14, 12, 10)
+        news_layout.setSpacing(8)
+        news_title = QLabel("Новости мира")
+        news_title.setStyleSheet("color: #e4edf2; font-size: 17px; font-weight: bold;")
+        news_layout.addWidget(news_title)
         self.news_widget = NewsWidget()
-        main_row.addWidget(self.news_widget, stretch=1)
+        news_layout.addWidget(self.news_widget, 1)
+        main_row.addWidget(news_panel, 1)
 
-        # Правая колонка с кнопками
-        right_panel = QFrame()
-        right_panel.setFixedWidth(250)
-        right_panel.setStyleSheet("QFrame { background: #16213e; border-radius: 10px; }")
+        right_panel = QWidget()
+        right_panel.setFixedWidth(230)
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(18, 18, 18, 18)
-        right_layout.setSpacing(14)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(10)
+        right_layout.addStretch(1)
+        self.client_label = QLabel()
+        self.client_label.setWordWrap(True)
+        self.client_label.setStyleSheet("color: #b7cedd; font-size: 13px;")
+        right_layout.addWidget(self.client_label)
 
         self.btn_play = QPushButton("Играть")
-        self.btn_play.setFixedHeight(60)
-        self.btn_play.setStyleSheet(
-            "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 19px; font-weight: bold; color: white; }"
-            "QPushButton:hover { background: #ff5570; }"
-            "QPushButton:pressed { background: #c81e3f; }"
-            "QPushButton:disabled { background: #3a2a3a; color: #777; }"
-        )
+        self.btn_play.setProperty("role", "primary")
+        self.btn_play.setFixedHeight(56)
         self._play_mode = True
         self.btn_play.clicked.connect(self._on_play_clicked)
-
         self.btn_cancel = QPushButton("Отмена")
-        self.btn_cancel.setFixedHeight(60)
-        self.btn_cancel.setStyleSheet(
-            "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 19px; font-weight: bold; color: white; }"
-            "QPushButton:hover { background: #ff5570; }"
-            "QPushButton:pressed { background: #c81e3f; }"
-        )
+        self.btn_cancel.setProperty("role", "cancel")
+        self.btn_cancel.setFixedHeight(56)
         self.btn_cancel.setVisible(False)
         self.btn_cancel.clicked.connect(self.cancel_update)
-
-        self.btn_addons = QPushButton("Аддоны")
-        self.btn_addons.setFixedHeight(48)
-        self.btn_addons.clicked.connect(self.open_addons)
-
-        self.btn_account = QPushButton("Аккаунт")
-        self.btn_account.setFixedHeight(42)
-        self.btn_account.clicked.connect(self.open_account)
-
         right_layout.addWidget(self.btn_play)
         right_layout.addWidget(self.btn_cancel)
-        right_layout.addSpacing(6)
+        self.btn_addons = QPushButton("Аддоны")
+        self.btn_addons.setFixedHeight(40)
+        self.btn_addons.clicked.connect(self.open_addons)
+        self.btn_account = QPushButton("Аккаунт")
+        self.btn_account.setFixedHeight(40)
+        self.btn_account.clicked.connect(self.open_account)
         right_layout.addWidget(self.btn_addons)
-        right_layout.addStretch()
         right_layout.addWidget(self.btn_account)
-
+        for button in (self.btn_play, self.btn_cancel, self.btn_addons, self.btn_account):
+            button.setCursor(Qt.PointingHandCursor)
         main_row.addWidget(right_panel)
-        outer.addLayout(main_row, stretch=1)
+        outer.addLayout(main_row, 1)
 
-        # --- Прогресс-бар внизу ---
         self.progress_widget = ProgressWidget()
         outer.addWidget(self.progress_widget)
+        self.info_label = QLabel()
+        self.info_label.setStyleSheet("color: #9db5c6; font-size: 11px;")
+        outer.addWidget(self.info_label)
 
         self._restore_window_geometry()
 
@@ -365,17 +350,23 @@ class MainWindow(QMainWindow):
         self._start_self_update_check()
 
     def _apply_dark_theme(self):
-        self.setStyleSheet("""
-            QMainWindow { background: #0f0f23; }
-            QWidget { color: #e0e0e0; }
-            QPushButton {
-                background: #16213e; border: 1px solid #0f3460;
-                border-radius: 6px; padding: 8px 18px; font-size: 16px;
-            }
-            QPushButton:hover { background: #0f3460; }
-            QPushButton:pressed { background: #1a1a4e; }
-            QPushButton:disabled { background: #1a1a2e; color: #555; }
-        """)
+        self.setStyleSheet(STYLESHEET)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, "title"):
+            return
+        compact = self.width() < 850 or self.height() < 500
+        self.title.setText("Wrath of the Lich King AI" if compact else "Wrath of the\nLich King AI")
+        self.title.setStyleSheet(
+            "font-family: 'Cinzel'; color: #e4edf2; font-size: "
+            + ("22px;" if compact else "34px;")
+        )
+        self.subtitle.setVisible(not compact)
+        self.centralWidget().layout().setContentsMargins(
+            *((18, 14, 18, 12) if compact else (28, 22, 28, 18))
+        )
+        self.centralWidget().layout().setSpacing(8 if compact else 14)
 
     def _restore_window_geometry(self):
         """Восстановить размер и монитор либо показать окно на основном экране."""
@@ -408,11 +399,11 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def _refresh_info(self):
-        exe_found = check_wow_executable()
+        client_installed = Config.has_complete_client_layout()
         client_version = get_current_version()
-        exe_status = "Wow.exe найден" if exe_found else "Wow.exe НЕ найден"
+        self.client_label.setText("Клиент установлен" if client_installed else "Начните с установки клиента")
         self.info_label.setText(
-            f"Лаунчер: {Config.LAUNCHER_VERSION}  |  Клиент: {client_version}  |  {exe_status}"
+            f"Лаунчер {Config.LAUNCHER_VERSION}    /    Клиент {client_version or 'не установлен'}"
         )
 
     def _load_news(self):
@@ -527,16 +518,7 @@ class MainWindow(QMainWindow):
         dialog = QDialog(self)
         dialog.setWindowTitle("Аккаунт")
         dialog.setFixedSize(470, 240)
-        dialog.setStyleSheet("""
-            QDialog { background: #0f0f23; }
-            QLabel { color: #e0e0e0; }
-            QPushButton {
-                background: #16213e; border: 1px solid #0f3460;
-                border-radius: 6px; padding: 8px 18px; font-size: 16px;
-                color: #e0e0e0;
-            }
-            QPushButton:hover { background: #0f3460; }
-        """)
+        dialog.setStyleSheet(STYLESHEET)
 
         layout = QVBoxLayout(dialog)
 
@@ -552,11 +534,7 @@ class MainWindow(QMainWindow):
         btn_layout = QHBoxLayout()
         btn_open = QPushButton("Открыть бота")
         btn_open.setFixedHeight(44)
-        btn_open.setStyleSheet(
-            "QPushButton { background: #e94560; border: none; border-radius: 5px; "
-            "font-size: 16px; font-weight: bold; color: white; }"
-            "QPushButton:hover { background: #ff5570; }"
-        )
+        btn_open.setProperty("role", "primary")
         btn_open.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://t.me/wotlk_amatol_bot")))
 
         btn_cancel = QPushButton("Отмена")

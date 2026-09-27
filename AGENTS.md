@@ -148,7 +148,7 @@ assets/
 - **venv**: `.venv/` в корне, НЕ `--break-system-packages`
 - **Кодировка**: `PYTHONUTF8=1` в CI для кириллицы в print
 - **Иконка**: эталон `assets/launcher_icon.png`, из него `generate_icon.py` собирает `dreamworld.ico`; Pillow не пишет ICO >256, поэтому PNG-в-ICO упаковывается вручную через `struct`
-- **GUI**: тёмная тема `#0f0f23`, акцент `#e94560`, шрифт Segoe UI 18 bold
+- **GUI**: атмосфера WotLK/Нордскола, общая тема `ui/theme.py`; палитра, шрифты и размеры в `DESIGN.md`.
 - **Имена**: игровой клиент = `Wow.exe`, лаунчер = `Dreamworld.exe`
 - **Версии лаунчера**: YYYYMMDD; не более одного выпуска в день, числовое сравнение
 - **Версия клиента**: YYYYMMDD по дню публикации обновления в Москве;

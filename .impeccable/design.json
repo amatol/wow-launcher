@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-27T20:52:38.400563+00:00",
+  "title": "Дизайн лаунчера: Нордскол",
+  "extensions": {
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "compact-width-below",
+        "value": "850px"
+      },
+      {
+        "name": "compact-height-below",
+        "value": "500px"
+      }
+    ],
+    "typographyMeta": {
+      "display": {
+        "displayName": "Заголовок WotLK",
+        "purpose": "Только название игры в главном окне."
+      }
+    }
+  },
+  "components": [
+    {
+      "name": "Основная кнопка",
+      "kind": "button",
+      "description": "HTML-иллюстрация нативной кнопки; размеры окна задаёт Qt.",
+      "html": "<button class=\"ds-primary\">Играть</button>",
+      "css": ".ds-primary{border:1px solid #395263;border-radius:5px;padding:8px 16px;font:14px \"Segoe UI\", \"DejaVu Sans\", sans-serif;background:#ddba7c;color:#18212a;font-size:18px;font-weight:bold;}.ds-primary:hover{background:#f0d4a5;}.ds-primary:focus-visible{outline:2px solid #ffffff;}.ds-primary:active{background:#c6a067;}",
+      "refersTo": "button-primary"
+    },
+    {
+      "name": "Вторичная кнопка",
+      "kind": "button",
+      "description": "HTML-иллюстрация нативной кнопки; размеры окна задаёт Qt.",
+      "html": "<button class=\"ds-secondary\">Аддоны</button>",
+      "css": ".ds-secondary{border:1px solid #395263;border-radius:5px;padding:8px 16px;font:14px \"Segoe UI\", \"DejaVu Sans\", sans-serif;background:#142b3b;color:#dce9f0;}.ds-secondary:hover{background:#203d50;}.ds-secondary:focus-visible{outline:2px solid #b9e8f7;}.ds-secondary:active{background:#0c1e2c;}",
+      "refersTo": "button-secondary"
+    },
+    {
+      "name": "Отмена",
+      "kind": "button",
+      "description": "HTML-иллюстрация нативной кнопки; размеры окна задаёт Qt.",
+      "html": "<button class=\"ds-cancel\">Отмена</button>",
+      "css": ".ds-cancel{border:1px solid #395263;border-radius:5px;padding:8px 16px;font:14px \"Segoe UI\", \"DejaVu Sans\", sans-serif;background:#142b3b;color:#f2c0b5;border-color:#95695f;}.ds-cancel:hover{background:#49302e;}.ds-cancel:focus-visible{outline:2px solid #b9e8f7;}.ds-cancel:active{background:#0c1e2c;}"
+    },
+    {
+      "name": "Панель новостей",
+      "kind": "card",
+      "description": "Тональная подложка над иллюстрацией.",
+      "html": "<section class=\"ds-news\">Новости мира</section>",
+      "css": ".ds-news{background:rgba(9,21,33,.863);color:#e4edf2;border:1px solid #304657;border-radius:6px;padding:14px 12px 10px 18px;font:bold 17px \"Segoe UI\", sans-serif;}"
+    },
+    {
+      "name": "Прогресс с процентом",
+      "kind": "custom",
+      "refersTo": "progress-with-text",
+      "description": "Процент внутри тёмного заполнения, как в диалоге аддонов.",
+      "html": "<div class=\"ds-progress\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"65\"><span class=\"ds-fill\"></span><span class=\"ds-value\">65%</span></div>",
+      "css": ".ds-progress{position:relative;height:24px;background:#102331;border:1px solid #395263;border-radius:4px;color:#e4edf2;font:14px \"Segoe UI\",sans-serif;text-align:center;}.ds-fill{position:absolute;left:0;top:0;height:100%;width:65%;border-radius:3px;background:#315c70;}.ds-value{position:relative;line-height:24px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Нордскол / WotLK",
+    "overview": "Пользователь подтвердил «Атмосфера WotLK». Иллюстрация ледяной цитадели создаёт атмосферу, а управление сохраняет привычные настольные кнопки и диалоги. Декоративной анимации нет.",
+    "keyCharacteristics": [
+      "Ледяная цитадель на тёмном фоне.",
+      "Золотое основное действие и светлый текст.",
+      "Общая тема главного окна и диалогов."
+    ],
+    "rules": [],
+    "dos": [
+      "Do сохранять читаемую подложку новостей поверх иллюстрации.",
+      "Do использовать тёмное заполнение полосы, если процент показан внутри.",
+      "Do сохранять видимый клавиатурный фокус кнопок."
+    ],
+    "donts": [
+      "Don't помещать Cinzel в основной текст интерфейса.",
+      "Don't добавлять декоративные фоновые таймеры."
+    ]
+  }
+}

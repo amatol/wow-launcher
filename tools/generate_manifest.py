@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
@@ -56,16 +57,19 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path, help="Папка эталонного WoW-клиента")
     parser.add_argument("output", type=Path, help="Путь manifest.json")
-    parser.add_argument("--version", required=True)
+    parser.add_argument("--version", help="Дата выпуска YYYYMMDD; по умолчанию сегодня по Москве")
     parser.add_argument("--base-url", default="https://wotlk.amatol.blog/launcher")
     parser.add_argument("--previous-manifest", type=Path)
     args = parser.parse_args()
+    release_version = datetime.now(timezone(timedelta(hours=3))).strftime("%Y%m%d")
+    if args.version is not None and args.version != release_version:
+        parser.error(f"Версия обновления должна соответствовать сегодняшней дате по Москве: {release_version}")
     if not args.source.is_dir():
         parser.error(f"Папка не существует: {args.source}")
     previous = None
     if args.previous_manifest:
         previous = json.loads(args.previous_manifest.read_text(encoding="utf-8"))
-    manifest = build_manifest(args.source.resolve(), args.version, args.base_url, previous)
+    manifest = build_manifest(args.source.resolve(), release_version, args.base_url, previous)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

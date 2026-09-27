@@ -1,11 +1,43 @@
 import tempfile
 import unittest
+import json
+from datetime import datetime, timezone
+from unittest.mock import patch
 from pathlib import Path
 
-from tools.generate_manifest import build_manifest
+from tools.generate_manifest import build_manifest, main
 
 
 class GenerateManifestTests(unittest.TestCase):
+    def test_cli_uses_moscow_release_day_after_utc_midnight_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "client"
+            source.mkdir()
+            (source / "Wow.exe").write_bytes(b"wow")
+            output = root / "manifest.json"
+            instant = datetime(2026, 9, 26, 21, 30, tzinfo=timezone.utc)
+            with patch("tools.generate_manifest.datetime") as clock, patch(
+                "sys.argv", ["generate_manifest.py", str(source), str(output)]
+            ):
+                clock.now.side_effect = lambda tz: instant.astimezone(tz)
+                main()
+            self.assertEqual(json.loads(output.read_text())["version"], "20260927")
+
+    def test_cli_rejects_old_release_date_without_overwriting_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "manifest.json"
+            output.write_text("previous manifest")
+            with patch("tools.generate_manifest.datetime") as clock, patch(
+                "sys.argv", ["generate_manifest.py", str(root), str(output), "--version", "20260920"]
+            ), patch("sys.stderr"):
+                clock.now.return_value = datetime(2026, 9, 27)
+                with self.assertRaises(SystemExit) as error:
+                    main()
+            self.assertEqual(error.exception.code, 2)
+            self.assertEqual(output.read_text(), "previous manifest")
+
     def test_builds_sorted_manifest_and_excludes_launcher_state(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

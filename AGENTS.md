@@ -39,7 +39,7 @@
 - GUI-приложение на Python под Windows
 - Обновление клиента WoW в папке запуска
 - GUI: PyQt5 (тёмная тема)
-- Источник обновлений: HTTP/FTP → фолбэк BitTorrent (libtorrent)
+- Источник обновлений: HTTP/HTTPS
 - Лаунчер называется `Dreamworld.exe`, игровой клиент — `Wow.exe`
 - Иконка: сгенерированная, буква «D» золотом на тёмно-синем фоне, 9 размеров (16–1024)
 - Сборка .exe через GitHub Actions (Wine на Apple Silicon не работает — QEMU падает)
@@ -102,7 +102,6 @@ core/
 updater/
   manifest.py           — парсинг JSON-манифеста, SHA-256 проверка
   http_updater.py       — HTTP-скачивание + бэкап .bak
-  torrent_updater.py    — BitTorrent фолбэк (libtorrent, optional)
   addons.py             — манифест аддонов, установка/обновление из каталогов
 ui/
   main_window.py        — главное окно, UpdateWorker, SelfUpdateWorker, SelfUpdateDialog
@@ -122,7 +121,7 @@ assets/
 2. Качает `manifest.json` с `MANIFEST_URL`
 3. **Всегда** проверяет каждый файл из манифеста по размеру и SHA-256 на диске
 4. Если файл уже существует и хэш совпадает — пропускает
-5. Иначе HTTP скачивание недостающих/изменённых файлов → если fail → BitTorrent
+5. Иначе HTTP/HTTPS скачивание недостающих/изменённых файлов; при сбое — ошибка и повторная попытка по запросу пользователя
 6. Бэкап `.bak` перед заменой, проверка хэша после
 7. Записывает новую версию в `.launcher_version`
 

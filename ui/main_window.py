@@ -19,7 +19,7 @@ from core.self_update import (
     download_update, apply_update,
 )
 from updater.manifest import (
-    Manifest, compute_existing_removed_files, filter_needed, remove_obsolete_files,
+    Manifest, compute_existing_removed_files, filter_needed,
 )
 from updater.http_updater import HTTPUpdater
 from updater.bootstrap import BootstrapInstaller
@@ -110,7 +110,7 @@ class UpdateWorker(QThread):
                 f"удалить устаревших: {len(removed)}"
             )
 
-            # Попытка HTTP
+            # Скачивание обновлений по HTTP
             self.log_signal.emit("HTTP-обновление...")
             self._updater = HTTPUpdater(self.game_dir, manifest, self._progress_cb)
             ok, count = self._updater.apply_all(needed)
@@ -126,26 +126,11 @@ class UpdateWorker(QThread):
                 self.finished_signal.emit(False, "Обновление отменено.")
                 return
 
-            self.log_signal.emit("HTTP не удалось. Попытка BitTorrent...")
-
-            if not Config.TORRENT_FALLBACK:
-                self.finished_signal.emit(False, f"HTTP не удалось. Torren fallback отключён.")
-                return
-
-            try:
-                from updater.torrent_updater import TorrentUpdater
-                self._updater = TorrentUpdater(self.game_dir, manifest, self._progress_cb)
-                ok_t, count_t = self._updater.apply_all(needed)
-                if ok_t:
-                    remove_obsolete_files(manifest, self.game_dir)
-                    set_current_version(manifest.version)
-                    self.finished_signal.emit(True, f"Обновление через торрент. Файлов: {count_t}")
-                else:
-                    self.finished_signal.emit(False, f"Торрент тоже не удалось. Файлов: {count_t}")
-            except ImportError:
-                self.finished_signal.emit(False, "libtorrent не установлен — torrent фолбэк недоступен.")
-            except Exception as e:
-                self.finished_signal.emit(False, f"Ошибка торрента: {e}")
+            self.finished_signal.emit(
+                False,
+                f"Не удалось скачать все обновления. Обновлено файлов: {count} из {len(needed)}. "
+                "Проверьте подключение к интернету и повторите попытку.",
+            )
 
         except Exception as e:
             self.finished_signal.emit(False, f"Ошибка: {e}")

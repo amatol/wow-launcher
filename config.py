@@ -49,15 +49,6 @@ class Config:
     # Размер чанка при скачивании (байт)
     DOWNLOAD_CHUNK = 65536
 
-    # Пытаться ли BitTorrent, если HTTP недоступен
-    TORRENT_FALLBACK = True
-
-    # Порт для torrent-клиента
-    TORRENT_PORT = 6881
-
-    # Макс. секунд ожидания торрента перед фолбэком
-    TORRENT_TIMEOUT = 300
-
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
     LAUNCHER_VERSION = "20260927"

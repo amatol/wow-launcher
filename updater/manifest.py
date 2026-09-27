@@ -19,7 +19,6 @@ class FileEntry:
     size: int
     sha256: str
     http_url: Optional[str] = None
-    torrent_url: Optional[str] = None
 
 
 @dataclass
@@ -50,7 +49,6 @@ class Manifest:
                 size=size,
                 sha256=sha256,
                 http_url=f.get("http_url"),
-                torrent_url=f.get("torrent_url"),
             ))
         removed_files = [_validate_relative_path(path) for path in data.get("removed_files", [])]
         if len(removed_files) != len(set(removed_files)):

@@ -8,7 +8,6 @@
 
 - **GUI на PyQt5** — тёмная тема, прогресс-бар, лог-консоль
 - **HTTP/FTP обновление** — скачивает файлы из манифеста, проверяет SHA-256
-- **BitTorrent фолбэк** — если HTTP недоступен, переключается на торрент
 - **Манифест-система** — JSON с описанием версий и файлов
 - **Точечная проверка** — качает только изменившиеся файлы (по размеру/хэшу)
 - **Самообновление лаунчера** — фоновая проверка, проверенная rename-then-replace замена EXE
@@ -33,8 +32,7 @@ wow-launcher/
 ├── updater/
 │   ├── manifest.py         # парсинг манифеста, проверка хэшей
 │   ├── http_updater.py     # HTTP-скачивание с проверкой SHA-256
-│   ├── addons.py           # проверка и установка аддонов
-│   └── torrent_updater.py  # BitTorrent фолбэк (libtorrent)
+│   └── addons.py           # проверка и установка аддонов
 └── ui/
     ├── main_window.py      # главное окно
     ├── widgets.py          # новости и прогресс-бар
@@ -53,10 +51,6 @@ wow-launcher/
 ```bash
 pip install -r requirements.txt
 ```
-
-> **libtorrent**: для работы торрент-фолбэка нужен `libtorrent-rasterbar`.
-> Установка на Windows: `pip install libtorrent-rasterbar` (или скачать wheel с [PythonLibtorrent](https://github.com/arvidn/libtorrent/releases)).
-> Если libtorrent не установлен — HTTP-обновление работает, торрент-фолбэк отключается.
 
 ## Запуск
 
@@ -90,8 +84,7 @@ MANIFEST_URL = "https://wotlk.amatol.blog/launcher/manifest.json"
       "path": "Wow.exe",
       "size": 10485760,
       "sha256": "e3b0c44298fc1c149...",
-      "http_url": "https://.../Wow.exe",
-      "torrent_url": "https://.../Wow.exe.torrent"
+      "http_url": "https://.../Wow.exe"
     }
   ]
 }
@@ -104,7 +97,6 @@ MANIFEST_URL = "https://wotlk.amatol.blog/launcher/manifest.json"
 | `size`       | Размер в байтах (0 — пропустить проверку)    |
 | `sha256`     | SHA-256 хэш файла (пустая строка — пропустить)|
 | `http_url`   | URL для HTTP-скачивания                       |
-| `torrent_url`| URL `.torrent`-файла (опционально)            |
 
 ## Как это работает
 
@@ -116,7 +108,7 @@ MANIFEST_URL = "https://wotlk.amatol.blog/launcher/manifest.json"
 5. Качает манифест клиента с `MANIFEST_URL`
 6. Сравнивает версию манифеста с локальной (`.launcher_version`)
 7. Определяет нужные файлы (версия отличается или хэш не совпадает)
-8. **Пытается HTTP** → если не удалось → **BitTorrent**
+8. Скачивает файлы по HTTP/HTTPS; при ошибке сообщает о ней и предлагает повторить попытку
 9. Проверяет SHA-256 каждого скачанного файла
 10. Создаёт бэкап существующего файла (`.bak`) перед заменой
 11. После успеха — записывает новую версию

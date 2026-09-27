@@ -24,7 +24,7 @@ a = Analysis(
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
-    excludes=['libtorrent'],
+    excludes=[],
     cipher=block_cipher,
 )
 

@@ -2,6 +2,20 @@
 
 Последнее обновление: 2026-09-28
 
+## Лаунчер WotLK опубликован — 28.09.2026
+
+- Выпуск 20260928, исходники /root/launcher main/0112910, Windows CI
+  36350739546 успешен; локально и в CI прошли 55 тестов.
+- gh run download 36350739546 --name Dreamworld-exe --dir /tmp/dreamworld-20260928;
+  python3 /tmp/publish-launcher-20260928.py из /root/launcher опубликовал
+  сначала EXE, затем манифест атомарными заменами. Прежний манифест
+  сохранён в /srv/dreamworld-launcher/releases/launcher_manifest-20260927.json.
+- HTTPS-проверка полного EXE и манифеста успешна: 42 118 276 байт,
+  SHA-256 787f65902e44798da43c8a10ddf0ccb815fdb35c6a3d769aac21e230ad2c290e.
+  Ссылка https://wotlk.amatol.blog/launcher/Dreamworld.exe;
+  самообновление объявлено в launcher_manifest.json. Клиентский манифест не менялся.
+- Интерактивный запуск на реальной Windows не выполнялся.
+
 ## Подготовка выпуска — 28.09.2026
 
 - Пользователь разрешил публикацию нового дизайна. Версия Config обновлена

@@ -2,6 +2,31 @@
 
 Последнее обновление: 2026-09-27
 
+## DreamProgression в обновлении клиента — 27.09.2026
+
+- Опубликован клиентский манифест 20260927: 265 файлов, добавлены только
+  DreamProgression.toc, Goals.lua и DreamProgression.lua в
+  Interface/AddOns/DreamProgression. Все прежние файлы и removed_files
+  сохранены; README в клиент не установлен. EXE лаунчера не менялся.
+- Аддон показывает текущую цель индивидуальной прогрессии сверху по центру,
+  автоматически скрывается на БГ и аренах; /dprog управляет положением,
+  размером и прозрачностью. Серверная часть опубликована и запущена штатным
+  deploy/restart из /root/wowserver, mod-individual-progression master/0e68608.
+- Резерв прежнего манифеста и точные скрипты подготовки/публикации:
+  /var/backups/wowserver/dream-progression-20260927. Выполнены python3
+  prepare-client.py и publish-client.py из этого каталога. Генерация через
+  tools/generate_manifest.py с --previous-manifest, проверка ровно трёх
+  добавлений, затем атомарный os.replace манифеста после запуска нового мира.
+- Три клиентских файла, манифест и ZIP побайтно проверены по HTTPS.
+  SHA-256 манифеста a895bd71d4db7d795a9f66a0cca1cd7db21c39a80f6d46ac115519d8723ef621.
+  Архив https://wotlk.amatol.blog/launcher/releases/DreamProgression-20260927.zip,
+  SHA-256 815c67dbca0e39d0f9eed09aff4ca4aefee3d6a2a64aa3f90a986cb979e0665d.
+- Проверки аддона: luac5.1, три Lua-прогона интерфейса/протокола,
+  C++-модель обработчика с ASan/UBSan, сборка реального worldserver.
+  Игроку нужно закрыть WoW и обновить клиент через лаунчер. Внешний вид
+  и переходы БГ/арена на реальном клиенте остаются ручной проверкой.
+
+
 ## Повторное использование HTTP-соединений — 27.09.2026
 
 - Обновление клиента использует одну requests.Session на apply_all; установка

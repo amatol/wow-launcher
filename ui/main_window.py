@@ -276,7 +276,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Dreamworld Launcher")
+        self.setWindowTitle("Wrath of the Lich King AI Launcher")
         self.setMinimumSize(self.MINIMUM_WIDTH, self.MINIMUM_HEIGHT)
         self.worker = None
         self.self_update_worker = None

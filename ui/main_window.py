@@ -264,14 +264,14 @@ class MainWindow(QMainWindow):
         central = LandscapeWidget()
         self.setCentralWidget(central)
         outer = QVBoxLayout(central)
-        outer.setContentsMargins(28, 22, 28, 18)
+        outer.setContentsMargins(28, 24, 28, 24)
         outer.setSpacing(14)
 
         # Заголовок остаётся текстом: чёткий при системном масштабировании.
-        self.title = QLabel("Wrath of the\nLich King AI")
+        self.title = QLabel("Wrath of the Lich King AI")
         self.title.setObjectName("gameTitle")
         self.title.setStyleSheet(
-            "font-family: 'Cinzel'; font-size: 34px; color: #e4edf2;"
+            "font-family: 'Cinzel'; font-size: 30px; color: #e4edf2;"
         )
         self.title.setAccessibleName("Wrath of the Lich King AI")
         outer.addWidget(self.title)
@@ -357,14 +357,14 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "title"):
             return
         compact = self.width() < 850 or self.height() < 500
-        self.title.setText("Wrath of the Lich King AI" if compact else "Wrath of the\nLich King AI")
+        self.title.setText("Wrath of the Lich King AI")
         self.title.setStyleSheet(
             "font-family: 'Cinzel'; color: #e4edf2; font-size: "
-            + ("22px;" if compact else "34px;")
+            + ("22px;" if compact else "30px;")
         )
         self.subtitle.setVisible(not compact)
         self.centralWidget().layout().setContentsMargins(
-            *((18, 14, 18, 12) if compact else (28, 22, 28, 18))
+            *((18, 16, 18, 18) if compact else (28, 24, 28, 24))
         )
         self.centralWidget().layout().setSpacing(8 if compact else 14)
 

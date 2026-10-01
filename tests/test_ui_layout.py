@@ -45,6 +45,23 @@ class UiLayoutTests(unittest.TestCase):
         self.assertEqual(window.progress_widget.percent_label.text(), "42%")
         self.assertGreater(window.news_widget.viewport().height(), 100)
 
+    def test_heading_and_progress_fit_at_supported_sizes(self):
+        window = self.window
+        for width, height in ((720, 400), (1000, 560), (1280, 720)):
+            with self.subTest(size=(width, height)):
+                window.resize(width, height)
+                window.progress_widget.set_status("Data/" + "длинный-путь/" * 30, 42)
+                window.show()
+                for _ in range(3):
+                    self.app.processEvents()
+                self.assertNotIn("\n", window.title.text())
+                self.assertLess(window.title.fontMetrics().horizontalAdvance(window.title.text()), window.title.width())
+                bar = window.progress_widget.bar
+                self.assertTrue(bar.parent().rect().contains(bar.geometry()))
+                self.assertGreaterEqual(bar.parent().height() - bar.geometry().bottom() - 1, 2)
+                self.assertTrue(window.rect().contains(bar.mapTo(window, bar.rect().bottomRight())))
+                self.assertLess(bar.mapTo(window, bar.rect().bottomRight()).y(), window.info_label.y())
+
     def test_primary_action_still_switches_between_play_and_update(self):
         with patch.object(self.window, "play") as play, patch.object(self.window, "start_update") as update:
             self.window._on_check_done(False)

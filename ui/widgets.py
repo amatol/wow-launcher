@@ -84,7 +84,7 @@ class ProgressWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 2, 0, 2)
         layout.setSpacing(6)
 
         self.label = QLabel("Готово")
@@ -98,7 +98,8 @@ class ProgressWidget(QWidget):
         self.bar.setObjectName("downloadProgress")
         self.bar.setRange(0, 100)
         self.bar.setValue(0)
-        self.bar.setFixedHeight(8)
+        self.bar.setFixedHeight(12)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         self.bar.setTextVisible(False)
         self.bar.setAccessibleName("Прогресс обновления")
         status_row = QHBoxLayout()

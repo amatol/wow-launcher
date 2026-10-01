@@ -2,13 +2,15 @@
 
 ## Иллюстрация northrend.png
 
-Создана 27.09.2026 встроенным инструментом image_gen (не CLI/API fallback).
-Оригинал сохранён в /root/.codex/generated_images/01a0e494-43ce-7c12-8a1a-e48591adfd69/exec-ca850930-568c-4e69-a6d1-eccdf04e2d16.png.
-В проект скопирован без редактирования. Это иллюстрация для фона, не скриншот игры.
+Создана 01.10.2026 встроенным инструментом image_gen (не CLI/API fallback).
+Референс пользователя amatol.PNG использован только для стилистики пиксель-арта;
+лицо, человек и очки не перенесены. Сам референс не включён в Git или EXE.
+Оригинал: /root/.codex/generated_images/01a0f8e1-8c1c-74d1-a669-6c000f60e03f/exec-295ec95a-87ac-4583-86a5-b5a23538d5d2.png.
+В проект скопирован без редактирования. Это фон, не скриншот игры.
 
 Точный промпт:
 
-> Create a premium dark fantasy environmental key art background for a World of Warcraft Wrath of the Lich King desktop game launcher. Landscape 1536x1024. A towering intricate icy gothic citadel at the far RIGHT third, jagged frozen cliffs, a glacial valley and distant snowy mountains, sparse drifting snow, moonlit arctic blue, deep midnight navy shadows, beautifully painted cinematic game concept art with convincing detailed ice and stone, not photoreal. Composition: left half mostly quiet deep navy atmospheric mist with low contrast, all impressive architecture and light concentrated upper right and right third. Bottom quarter dark mist. Restrained desaturated pale blue light, a tiny warm amber window in the fortress. No characters, no text, no logos, no lettering, no interface, no buttons. Artwork must read well as a dark backdrop behind interface labels, elegant atmospheric depth, rich hand-painted detail. Asset for real launcher, not a mockup.
+> Use case: stylized-concept. Create a new landscape background asset for the Dreamworld Wrath of the Lich King desktop launcher, wide 16:9. Reference image is STYLE ONLY: match its deliberately coarse pixel art, large hard square pixels, flat limited palette, crisp stepped silhouettes and simple shaded clusters. Do NOT include the person, portrait, face, glasses, human, character or any likeness. Scene: a glacial Northrend valley with snow-covered angular mountains, frozen lake, and an imposing dark icy gothic citadel concentrated in the upper right third. Midnight blue and muted sky blue ice with restrained warm gold window pixels. Quiet dark blue atmospheric negative space across the left half for the news panel and along the top for a single line heading. Pixel art landscape, old school adventure-game background, clearly visible coarse pixels like the supplied image; no smooth painting, no anti-aliasing, no realistic textures. Bottom quarter dark. No text, logos, buttons, frames or UI. Save the output image to disk and return its path.
 
 ## Шрифт
 

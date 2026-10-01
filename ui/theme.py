@@ -44,6 +44,7 @@ QProgressBar {
     text-align: center; color: #e4edf2; min-height: 8px;
 }
 QProgressBar::chunk { background: #315c70; border-radius: 3px; }
+QProgressBar#downloadProgress { min-height: 0px; padding: 0px; }
 QProgressBar#downloadProgress::chunk { background: #76bfd5; }
 QScrollBar:vertical { background: #102331; width: 8px; margin: 0; }
 QScrollBar::handle:vertical { background: #456378; border-radius: 4px; min-height: 30px; }
@@ -75,7 +76,7 @@ class LandscapeWidget(QWidget):
         if not self._source.isNull():
             self._scaled = self._source.scaled(
                 self.size() * self.devicePixelRatioF(), Qt.KeepAspectRatioByExpanding,
-                Qt.SmoothTransformation,
+                Qt.FastTransformation,
             )
             self._scaled.setDevicePixelRatio(self.devicePixelRatioF())
 

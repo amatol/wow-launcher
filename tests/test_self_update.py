@@ -22,7 +22,8 @@ class SelfUpdateTests(unittest.TestCase):
 
     def test_cleanup_removes_old_and_bat_and_log(self):
         with tempfile.TemporaryDirectory() as game_dir:
-            old_exe = os.path.join(game_dir, "Dreamworld.exe.old")
+            from config import Config
+            old_exe = os.path.join(game_dir, Config.LAUNCHER_EXE_NAME + ".old")
             bat = os.path.join(game_dir, ".dreamworld_updater.bat")
             log = os.path.join(game_dir, ".dreamworld_updater.log")
 

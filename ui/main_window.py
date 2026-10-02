@@ -41,7 +41,8 @@ class CheckWorker(QThread):
             manifest = Manifest.fetch(Config.MANIFEST_URL)
             needed = filter_needed(manifest, Config.get_current_version(), Config.GAME_DIR)
             removed = compute_existing_removed_files(manifest, Config.GAME_DIR)
-            self.check_done.emit(bool(needed or removed))
+            from core.launcher_bundle import companion_needed
+            self.check_done.emit(bool(needed or removed or companion_needed(manifest.raw, Config.GAME_DIR)))
         except Exception:
             # При ошибке сети — считаем что обновлений нет, даём играть
             self.check_done.emit(False)
@@ -101,7 +102,10 @@ class UpdateWorker(QThread):
             needed = filter_needed(manifest, Config.get_current_version(), self.game_dir)
             removed = compute_existing_removed_files(manifest, self.game_dir)
 
+            from core.launcher_bundle import sync_companion
+
             if not needed and not removed:
+                sync_companion(manifest.raw, self.game_dir)
                 set_current_version(manifest.version)
                 self.finished_signal.emit(True, "Клиент актуален. Обновлений нет.")
                 return
@@ -117,6 +121,10 @@ class UpdateWorker(QThread):
             ok, count = self._updater.apply_all(needed)
 
             if ok:
+                if self._cancel:
+                    self.finished_signal.emit(False, "Обновление отменено.")
+                    return
+                sync_companion(manifest.raw, self.game_dir)
                 set_current_version(manifest.version)
                 self.finished_signal.emit(
                     True, f"Обновление завершено. Обновлено файлов: {count}, удалено: {len(removed)}"
@@ -507,7 +515,13 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Ошибка", "Wow.exe не найден в папке лаунчера!")
             return
         self.progress_widget.set_status("Запуск WoW...", -1)
-        launch_wow()
+        try:
+            if not launch_wow():
+                raise RuntimeError("Не удалось запустить Wow.exe")
+        except Exception as error:
+            QMessageBox.warning(self, "Ошибка запуска", str(error))
+            self.progress_widget.set_status("Не удалось запустить WoW.", -1)
+            return
         self.close()
 
     def open_addons(self):

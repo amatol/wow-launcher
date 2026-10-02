@@ -9,8 +9,8 @@ from pathlib import Path
 from urllib.parse import quote
 
 
-EXCLUDED_PARTS = {".launcher_tmp", ".git"}
-EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe", "Repair.log"}
+EXCLUDED_PARTS = {".launcher_tmp", ".git", "Dreamworld.app", "Dreamworld.app.old", ".dreamworld-wine"}
+EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe", "Dreamworld.app.zip", "Repair.log", ".dreamworld-wine.log", ".dreamworld-launchers.json"}
 
 
 def sha256(path: Path) -> str:
@@ -41,6 +41,8 @@ def build_manifest(source: Path, version: str, base_url: str, previous: dict = N
         })
     manifest = {"version": version, "files": files}
     if previous is not None:
+        if "launchers" in previous:
+            manifest["launchers"] = previous["launchers"]
         current_paths = {entry["path"] for entry in files}
         previous_paths = {entry["path"] for entry in previous.get("files", [])}
         # Tombstones must survive subsequent releases.  A client can skip any

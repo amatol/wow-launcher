@@ -1,6 +1,6 @@
 # AGENTS.md — Dreamworld Launcher
 
-**Python 3.10+ / PyQt5 / Windows GUI app.** Кросс-сборка .exe через GitHub Actions (windows-latest). Локальная разработка на macOS через venv.
+**Python 3.10+ / PyQt5 / Windows и тестовая macOS Apple Silicon.** Кросс-сборка .exe через GitHub Actions (windows-latest). Локальная разработка на macOS через venv.
 
 ## Восстановление контекста при каждом запуске
 
@@ -158,3 +158,15 @@ assets/
   игроком не заменяет дату выпуска из манифеста.
 - **Manifest лаунчера**: `version`, `download_url`, `sha256`, `size`, `changelog`
 - **gh CLI**: авторизован как `amatol`, scope `workflow`, протокол HTTPS
+
+## Windows и macOS
+
+- Публиковать обе сборки вместе: Dreamworld.exe и Dreamworld.app рядом с Wow.exe.
+- macOS-сборка нативная arm64, включает закреплённый Wine; префикс строго
+  `.dreamworld-wine` в папке клиента. Префикс не раздаётся и не обновляется.
+- Общий клиентский манифест содержит `launchers.windows` и `launchers.macos`.
+  Генератор сохраняет эти поля из предыдущего манифеста.
+- Самообновление своей платформы и установка второй платформы разделены:
+  чужой лаунчер устанавливается при обновлении клиента, свой — через диалог.
+- Собирать обе платформы в CI; публиковать tools/publish_launchers.py после
+  успешных проверок, с отдельным резервом и сегодняшней московской датой.

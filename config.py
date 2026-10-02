@@ -6,10 +6,23 @@ import os
 import sys
 
 
+def app_bundle_path(executable=None):
+    executable = os.path.abspath(executable or sys.executable)
+    candidate = os.path.dirname(os.path.dirname(os.path.dirname(executable)))
+    return candidate if candidate.endswith(".app") else None
+
+
+def game_directory():
+    if getattr(sys, "frozen", False):
+        bundle = app_bundle_path() if sys.platform == "darwin" else None
+        return os.path.dirname(bundle or sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 class Config:
     UPDATE_BASE_URL = "https://wotlk.amatol.blog/launcher"
     # Папка, в которой запущен лаунчер = папка с клиентом WoW
-    GAME_DIR = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, "frozen", False) else __file__))
+    GAME_DIR = game_directory()
 
     # Исполняемый файл клиента
     WOW_EXE_NAMES = ["Wow.exe", "wow.exe", "WoW.exe"]
@@ -51,13 +64,13 @@ class Config:
 
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
-    LAUNCHER_VERSION = "20261001"
+    LAUNCHER_VERSION = "20261002"
 
     # URL манифеста обновлений лаунчера (JSON)
-    LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"
+    LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/" + ("launcher_manifest_macos.json" if sys.platform == "darwin" else "launcher_manifest.json")
 
     # Имя .exe файла лаунчера
-    LAUNCHER_EXE_NAME = "Dreamworld.exe"
+    LAUNCHER_EXE_NAME = "Dreamworld.app.zip" if sys.platform == "darwin" else "Dreamworld.exe"
 
     @classmethod
     def detect_wow_exe(cls):

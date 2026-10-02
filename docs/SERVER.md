@@ -148,3 +148,41 @@ nftables. Сертификат Let's Encrypt для `wotlk.amatol.blog` выпу
 ```bash
 sudo /root/wowserver/scripts/publish-breaking-news.sh
 ```
+
+## Совместный выпуск Windows и тестовой macOS
+
+CI собирает `Dreamworld-exe` и `Dreamworld-macos`. Второй артефакт содержит
+`Dreamworld.app.zip`; ZIP сохраняет права и symlink бандла. Скачать оба
+артефакта одного успешного workflow и выполнить из корня репозитория:
+
+```bash
+PYTHONPATH=. .venv/bin/python tools/publish_launchers.py /path/Dreamworld.exe \
+  /path/Dreamworld.app.zip --backup /var/backups/wowserver/launchers-YYYYMMDD
+```
+
+Скрипт публикует неизменяемые релизные URL, полностью сверяет их по HTTPS,
+устанавливает обе версии в эталонный клиент и публикует оба launcher-манифеста
+и общий клиентский манифест последним. Игровые файлы при этом не изменяются.
+Сохраняется отдельный macOS-манифест `launcher_manifest_macos.json`.
+При обычном обновлении клиент получает вторую платформу рядом с текущим
+лаунчером; собственное самообновление выполняется через штатный диалог.
+
+Для Mac распаковать `Dreamworld.app.zip` в папку с `Wow.exe`. Поддерживается
+Apple Silicon, macOS 14+ с Rosetta 2. Wine создаёт `.dreamworld-wine` рядом
+с игрой при первом запуске; журнал — `.dreamworld-wine.log`. Папка клиента
+должна быть доступна для записи. В сборке используется встроенный MTLD3D
+для DirectX 9 и RosettaX87. Игровой EXE не патчится. Бандл подписан ad-hoc,
+без Developer ID и нотариализации; macOS может блокировать первый запуск.
+После проверки источника скачивания снять quarantine с конкретного бандла:
+
+```bash
+xattr -dr com.apple.quarantine /path/to/client/Dreamworld.app
+```
+
+Исходник среды: WoWSilicon main, ревизия
+`2d383ffa0e01faa4a768c2bacb2c635c6c0c2e0e`; Wine runtime r17, Wine 11.13,
+WineAndAqua/wine ветка wine-11.13-macos,
+`37540b5d94ac1c86e2599ef55d7f3a15e3237ce8`. Контрольные суммы и лицензии
+поставляются внутри Wine и Contents/Resources/ThirdParty. Сборка закреплена
+в tools/build_macos.sh. Нужна ручная проверка входа в мир на реальном Mac;
+успешная сборка сама по себе не подтверждает совместимость игры.

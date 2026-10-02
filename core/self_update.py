@@ -108,6 +108,9 @@ def apply_update(new_exe_path: str) -> bool:
     поставить новый на его место, перезапустить.
     .old будет удалён при следующем запуске (cleanup_self_update_files).
     """
+    if sys.platform == "darwin":
+        return _apply_macos_update(new_exe_path)
+
     if not os.path.isfile(new_exe_path):
         return False
 
@@ -199,6 +202,14 @@ def wait_for_update_parent(argv=None, timeout_ms: int = 0xFFFFFFFF) -> bool:
     del argv[index:index + 2]
     if sys.platform == "win32":
         _wait_for_windows_process(pid, timeout_ms)
+    elif sys.platform == "darwin":
+        deadline = time.monotonic() + min(timeout_ms / 1000, 60)
+        while time.monotonic() < deadline:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(0.1)
     return True
 
 
@@ -291,3 +302,20 @@ def _move_exe(src: str, dst: str):
             os.remove(src)
         except Exception:
             pass
+
+
+def _apply_macos_update(archive):
+    from config import app_bundle_path
+    from core.launcher_bundle import install_app
+    import subprocess
+    if not getattr(sys, "frozen", False) or not app_bundle_path():
+        return False
+    try:
+        app = install_app(archive, Config.GAME_DIR)
+        subprocess.Popen([str(app / "Contents/MacOS/Dreamworld"),
+                          "--self-update-parent-pid", str(os.getpid())],
+                         cwd=Config.GAME_DIR, env=_clean_pyinstaller_environment())
+        _cleanup_dir(os.path.dirname(archive))
+        return True
+    except Exception:
+        return False

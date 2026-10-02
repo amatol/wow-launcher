@@ -99,6 +99,12 @@ def download_update(manifest: dict, progress_cb: ProgressCallback = None) -> Tup
         _cleanup_dir(tmp_dir)
         return False, ""
 
+    try:
+        from core.launcher_bundle import sync_companion
+        sync_companion(manifest, Config.GAME_DIR)
+    except Exception:
+        _cleanup_dir(tmp_dir)
+        return False, ""
     return True, tmp_path
 
 

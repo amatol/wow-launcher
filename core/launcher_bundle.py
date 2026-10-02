@@ -86,15 +86,13 @@ def companion_needed(raw, game_dir):
     platform, entry = _companion(raw)
     if not entry:
         return False
-    target = Path(game_dir) / ("Dreamworld.exe" if platform == "windows" else "Dreamworld.app")
+    target = Path(game_dir) / ("Dreamworld.exe" if platform == "windows" else "Dreamworld.app.zip")
     state = Path(game_dir) / ".dreamworld-launchers.json"
     try:
         installed = json.loads(state.read_text())
         if not target.exists() or installed.get(platform) != entry["sha256"]:
             return True
-        if platform == "windows":
-            return hashlib.sha256(target.read_bytes()).hexdigest() != entry["sha256"]
-        return not (target / "Contents/MacOS/Dreamworld").is_file()
+        return hashlib.sha256(target.read_bytes()).hexdigest() != entry["sha256"]
     except (OSError, ValueError, KeyError):
         return True
 
@@ -113,10 +111,10 @@ def sync_companion(raw, game_dir):
                                          entry["size"], entry["sha256"], max_retries=3)
         if not ok:
             raise RuntimeError("Не удалось загрузить второй лаунчер: " + str(error))
-        if platform == "macos":
-            install_app(archive, game_dir)
-        else:
-            os.replace(archive, Path(game_dir) / "Dreamworld.exe")
+        # На Windows ZIP сохраняет macOS symlink и права без привилегий.
+        # На Mac пользователь распаковывает этот ZIP штатным архиватором.
+        name = "Dreamworld.app.zip" if platform == "macos" else "Dreamworld.exe"
+        os.replace(archive, Path(game_dir) / name)
         state_path = Path(game_dir) / ".dreamworld-launchers.json"
         try:
             state = json.loads(state_path.read_text())

@@ -24,23 +24,6 @@ mkdir -p "$resources/ThirdParty"
 cp build/wowsilicon/LICENSE "$resources/ThirdParty/WoWSilicon-LICENSE"
 cp build/wowsilicon/Packaging/WineRuntime/*json "$resources/ThirdParty/"
 printf '%s\n' "WoWSilicon https://github.com/WoWSilicon/WoWSilicon revision $upstream_revision" > "$resources/ThirdParty/SOURCES.txt"
-# Windows должен устанавливать бандл без прав на создание symlink.
-# Материализуем ссылки ДО подписи, чтобы ресурсная подпись оставалась валидной.
-python - <<'PYCODE'
-from pathlib import Path
-import shutil
-root = Path('dist/Dreamworld.app').resolve()
-for path in sorted(root.rglob('*'), key=lambda p: len(p.parts), reverse=True):
-    if path.is_symlink():
-        target = path.resolve(strict=True)
-        if not target.is_relative_to(root):
-            raise RuntimeError('Внешняя ссылка в бандле: ' + str(path))
-        path.unlink()
-        if target.is_dir():
-            shutil.copytree(target, path)
-        else:
-            shutil.copy2(target, path)
-PYCODE
 # Подпись ad-hoc для тестовой версии. Developer ID и нотариализация пока отсутствуют.
 codesign --force --deep --sign - dist/Dreamworld.app
 codesign --verify --deep --strict dist/Dreamworld.app

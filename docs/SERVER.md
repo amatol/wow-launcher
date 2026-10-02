@@ -171,7 +171,7 @@ PYTHONPATH=. .venv/bin/python tools/publish_launchers.py /path/Dreamworld.exe \
 При обычном обновлении клиент получает вторую платформу рядом с текущим
 лаунчером; собственное самообновление выполняется через штатный диалог.
 
-Для Mac распаковать `Dreamworld.app.zip` в папку с `Wow.exe`. Поддерживается
+Для Mac открыть готовый `Dreamworld.app` из папки с `Wow.exe`. Поддерживается
 Apple Silicon, macOS 14+ с Rosetta 2. Wine создаёт `.dreamworld-wine` рядом
 с игрой при первом запуске; журнал — `.dreamworld-wine.log`. Папка клиента
 должна быть доступна для записи. В сборке используется встроенный MTLD3D

@@ -2,27 +2,49 @@
 
 Последнее обновление: 2026-10-02
 
-## Тестовая macOS Apple Silicon — подготовка 02.10.2026
+## Тестовая macOS Apple Silicon — опубликовано 02.10.2026
 
-- Пользователь разрешил Dreamworld.app рядом с Dreamworld.exe и общий выпуск.
-- Исходное дерево main/aeb7151, пользовательский amatol.PNG не меняется.
-- Добавлены нативная arm64-сборка и встроенный Wine r17 с RosettaX87/MTLD3D.
-  Источник WoWSilicon main/2d383ffa0e01faa4a768c2bacb2c635c6c0c2e0e.
-- Префикс .dreamworld-wine и журнал создаются в папке клиента; игровой EXE
-  не патчится. Бандл определяется по sys.executable, клиент — рядом с .app.
-- Отдельный macOS self-update, общий manifest.launchers, установка второй
-  платформы при обновлении клиента с проверкой SHA256 и безопасной распаковкой.
-- tools/publish_launchers.py сохраняет резерв, проверяет оба файла по HTTPS,
-  устанавливает оба лаунчера в эталонный клиент, публикует манифесты последними.
-- Пользователь уточнил: готовый Dreamworld.app, без ручной распаковки ZIP.
-  Qt упакован в one-file EXE, внешние Wine-ссылки материализуются до подписи.
-  Windows автоматически распаковывает готовый .app рядом с .exe; транспортный
-  ZIP остаётся только внутренним форматом доставки. Повторный macOS CI впереди.
-- 63 теста, compileall, bash -n и diff --check прошли локально. Первый macOS CI
-  выявил различие /var → /private/var и Windows-имя в тесте очистки; тесты
-  исправлены с учётом платформы. Совместный CI и публикация впереди.
-- macOS 14+, Rosetta 2; подпись ad-hoc, без нотариализации. Вход в игру на
-  реальном Mac пока не проверен. Игровые службы не требуют перезапуска.
+- Совместный выпуск 20261002 из 8a6056c7e085dd0196c8a264c937b9c6d8bee33d.
+  CI 36989991521: Windows и macOS успешно, 63 теста на каждой платформе.
+- Dreamworld.app — нативный arm64 one-file лаунчер с внешним Wine 11.13 r17,
+  MTLD3D и RosettaX87. Источник WoWSilicon main,
+  2d383ffa0e01faa4a768c2bacb2c635c6c0c2e0e; WineAndAqua/wine,
+  wine-11.13-macos/37540b5d94ac1c86e2599ef55d7f3a15e3237ce8.
+- Внешних symlink нет: Windows автоматически устанавливает готовую папку
+  Dreamworld.app рядом с Dreamworld.exe и Wow.exe, без ручной распаковки.
+  ZIP — внутренний формат доставки и самообновления; после установки его нет.
+- macOS использует отдельный launcher_manifest_macos.json; оба манифеста
+  самообновления и общий manifest.json содержат launchers.windows/macos.
+  Генератор клиентских манифестов переносит эти поля в следующие выпуски.
+- Wine создаёт .dreamworld-wine в папке клиента; чужие WINEPREFIX/WINEARCH
+  не наследуются. Журнал .dreamworld-wine.log там же. Префикс не обновляется.
+  Игровой EXE не патчится; применяется встроенный MTLD3D (d3d9=b).
+- Успешны codesign --verify --deep --strict, запуск готового бандла и
+  выполнение Wine --version на Apple Silicon macOS 15.7.9. Те же проверки
+  прошла копия, распакованная механизмом самообновления. Подпись ad-hoc,
+  без Developer ID/нотариализации. macOS 14+ и Rosetta 2; вход в игровой
+  мир на реальном Mac пока не проверен. Инструкция первого запуска: docs/SERVER.md.
+- Выполнены gh run download 36989991521 для Dreamworld-exe/Dreamworld-macos
+  в /tmp/dreamworld-20261002-final/{windows,macos}, затем
+  PYTHONPATH=. .venv/bin/python tools/publish_launchers.py
+  /tmp/dreamworld-20261002-final/windows/Dreamworld.exe
+  /tmp/dreamworld-20261002-final/macos/Dreamworld.app.zip
+  --backup /var/backups/wowserver/launchers-20261002.
+- Публичный Windows EXE: 41 521 560 байт, SHA256
+  36dc82b619b9b6a8e3557c05b581afaa17bed925d436d12cd19595aef0ca1a4b.
+  Транспортный macOS ZIP: 166 859 351 байт, SHA256
+  b020e29eae3096c3b7cfb5fac4ba4a18778a10aa580082e69a1c28cdc24e3702.
+  Неизменяемые URL: /launcher/releases/Dreamworld-20261002.exe и
+  /launcher/releases/Dreamworld-20261002.app.zip; стандартные адреса обновлены.
+- Обе версии установлены в /opt/azerothcore/client рядом с Wow.exe. Общий
+  клиентский манифест датирован 20261002; все 265 игровых файлов и tombstones
+  побайтно сохранены относительно прежнего манифеста 20260928.
+- Полные HTTPS-копии обоих релизов и всех трёх манифестов проверены.
+  Реальная установка второй платформы по HTTPS испытана во временном каталоге
+  для Windows- и macOS-веток; все 1836 файлов .app совпали с установленными,
+  существующий префикс и текущий Windows-лаунчер сохранены при установке Mac.
+- Игровые службы не перезапускались, серверная дата не менялась. Локальный
+  пользовательский amatol.PNG не менялся и не включён в коммиты.
 
 ## Пиксельный дизайн и исправление геометрии — 01.10.2026
 

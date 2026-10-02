@@ -36,7 +36,7 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
 
-      - name: Build Dreamworld Windows and macOS
+      - name: Build Dreamworld.exe
         run: pyinstaller Dreamworld.spec --noconfirm
 
       - name: Upload artifact

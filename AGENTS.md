@@ -162,8 +162,8 @@ assets/
 ## Windows и macOS
 
 - Публиковать обе сборки вместе: Dreamworld.exe и Dreamworld.app рядом с Wow.exe.
-  На Windows macOS-версия хранится как Dreamworld.app.zip, чтобы сохранить
-  macOS symlink/права/подпись; ZIP распаковывается на Mac.
+  macOS-бандл не содержит symlink: Windows устанавливает готовый .app без
+  привилегий. ZIP используется только внутри доставки/самообновления.
 - macOS-сборка нативная arm64, включает закреплённый Wine; префикс строго
   `.dreamworld-wine` в папке клиента. Префикс не раздаётся и не обновляется.
 - Общий клиентский манифест содержит `launchers.windows` и `launchers.macos`.

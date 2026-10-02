@@ -30,6 +30,21 @@ def main():
     app.setOrganizationName("Dreamworld")
     app.setOrganizationDomain("wotlk.amatol.blog")
 
+    if "--smoke-test" in sys.argv:
+        # Проверка упакованного Qt и встроенного Wine без подключения к серверу.
+        from config import app_bundle_path
+        import subprocess
+        bundle = app_bundle_path()
+        if bundle and sys.platform == "darwin":
+            resources = os.path.join(bundle, "Contents", "Resources")
+            assert Config.GAME_DIR == os.path.dirname(bundle)
+            env = os.environ.copy()
+            env["DYLD_LIBRARY_PATH"] = os.path.join(resources, "Wine", "lib", "external")
+            subprocess.run([os.path.join(resources, "Wine", "bin", "wine"), "--version"],
+                           env=env, check=True, timeout=30)
+        print("Dreamworld smoke test OK", Config.LAUNCHER_VERSION, flush=True)
+        return
+
     # Иконка приложения
     icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "dreamworld.ico")
     if os.path.isfile(icon_path):

@@ -1,7 +1,9 @@
 # Сборка нативного лаунчера для Apple Silicon; Wine добавляется после PyInstaller.
 import os
-from config import Config
+import sys
 root = os.path.abspath('.')
+sys.path.insert(0, root)
+from config import Config
 a = Analysis(['main.py'], pathex=[root], binaries=[],
              datas=[('assets', 'assets')], hiddenimports=[], hookspath=[],
              runtime_hooks=[], excludes=[])

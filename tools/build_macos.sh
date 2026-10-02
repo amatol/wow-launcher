@@ -45,4 +45,5 @@ PYCODE
 codesign --force --deep --sign - dist/Dreamworld.app
 codesign --verify --deep --strict dist/Dreamworld.app
 file dist/Dreamworld.app/Contents/MacOS/Dreamworld
-(cd dist && ditto -c -k --keepParent Dreamworld.app Dreamworld.app.zip)
+QT_QPA_PLATFORM=offscreen dist/Dreamworld.app/Contents/MacOS/Dreamworld --smoke-test
+(cd dist && ditto -c -k --norsrc --noextattr --keepParent Dreamworld.app Dreamworld.app.zip)

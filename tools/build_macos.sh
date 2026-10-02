@@ -30,3 +30,10 @@ codesign --verify --deep --strict dist/Dreamworld.app
 file dist/Dreamworld.app/Contents/MacOS/Dreamworld
 QT_QPA_PLATFORM=offscreen dist/Dreamworld.app/Contents/MacOS/Dreamworld --smoke-test
 (cd dist && ditto -c -k --norsrc --noextattr --keepParent Dreamworld.app Dreamworld.app.zip)
+# Проверяем именно способ распаковки, используемый самообновлением macOS.
+PYTHONPATH=. python - <<'PY'
+from core.launcher_bundle import extract_app
+extract_app('dist/Dreamworld.app.zip', 'build/roundtrip')
+PY
+codesign --verify --deep --strict build/roundtrip/Dreamworld.app
+QT_QPA_PLATFORM=offscreen build/roundtrip/Dreamworld.app/Contents/MacOS/Dreamworld --smoke-test

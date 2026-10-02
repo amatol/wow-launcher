@@ -24,9 +24,11 @@ class MacLauncherTests(unittest.TestCase):
                 archive.writestr(extra, b'bad')
 
     def test_bundle_uses_client_directory_instead_of_contents_macos(self):
-        with patch('config.sys.platform', 'darwin'), patch('config.sys.frozen', True, create=True), patch('config.sys.executable', '/client/Dreamworld.app/Contents/MacOS/Dreamworld'):
-            self.assertEqual(game_directory(), '/client')
-            self.assertEqual(app_bundle_path(), '/client/Dreamworld.app')
+        client = Path(tempfile.gettempdir()).resolve() / 'client'
+        bundle = client / 'Dreamworld.app'
+        with patch('config.sys.platform', 'darwin'), patch('config.sys.frozen', True, create=True), patch('config.sys.executable', str(bundle / 'Contents/MacOS/Dreamworld')):
+            self.assertEqual(game_directory(), str(client))
+            self.assertEqual(app_bundle_path(), str(bundle))
 
     def test_wine_prefix_stays_in_client_and_command_preserves_spaces(self):
         with tempfile.TemporaryDirectory() as directory:

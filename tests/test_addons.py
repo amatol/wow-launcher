@@ -66,6 +66,22 @@ class AddonsTests(unittest.TestCase):
                 "size": len(toc),
             }])
 
+    def test_generator_excludes_root_and_nested_git_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / "DragonUI"
+            component = package / "DragonUI"
+            component.mkdir(parents=True)
+            (component / "DragonUI.toc").write_text("## Interface: 30300")
+            for folder in [package / ".git", component / ".git", component / "libs/Lib/.git"]:
+                folder.mkdir(parents=True)
+                (folder / "config").write_text("repository metadata")
+            (component / "libs/Other").mkdir()
+            (component / "libs/Other/.git").write_text("gitdir: elsewhere")
+            (component / ".gitignore").write_text("developer file")
+            entry = describe_addon(package, "20261004", "https://example/addons")
+            paths = {item["path"] for item in entry["files"]}
+            self.assertEqual(paths, {"DragonUI/DragonUI.toc", "DragonUI/.gitignore"})
+
     def test_install_downloads_verified_files_into_addon_directory(self):
         payload = b"## Interface: 30300"
         entry = _validate_entry(AddonEntry("MyAddon", "1", folders=["MyAddon"], files=[AddonFile(

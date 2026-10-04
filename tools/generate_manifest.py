@@ -10,6 +10,9 @@ from urllib.parse import quote
 
 
 EXCLUDED_PARTS = {".launcher_tmp", ".git", "Dreamworld.app", "Dreamworld.app.old", ".dreamworld-wine"}
+# DragonUI устанавливается по выбору игрока через каталог аддонов.
+OPTIONAL_ADDON_FOLDERS = {"DragonUI", "DragonUI_Options"}
+
 EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe", "Dreamworld.app.zip", "Repair.log", ".dreamworld-wine.log", ".dreamworld-launchers.json"}
 
 
@@ -28,6 +31,9 @@ def build_manifest(source: Path, version: str, base_url: str, previous: dict = N
     for path in sorted(source.rglob("*")):
         relative = path.relative_to(source)
         if not path.is_file() or any(part in EXCLUDED_PARTS for part in relative.parts):
+            continue
+        if (relative.parts[:2] == ("Interface", "AddOns")
+                and len(relative.parts) > 2 and relative.parts[2] in OPTIONAL_ADDON_FOLDERS):
             continue
         if relative.name in EXCLUDED_NAMES or relative.name.endswith((".bak", ".part")):
             continue

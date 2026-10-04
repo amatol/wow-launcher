@@ -51,6 +51,18 @@ class GenerateManifestTests(unittest.TestCase):
             self.assertEqual([item["path"] for item in result["files"]], ["Data/patch.MPQ", "Wow.exe"])
             self.assertEqual(result["files"][0]["http_url"], "https://example.test/launcher/files/Data/patch.MPQ")
 
+    def test_dragonui_stays_optional_when_present_in_reference_client(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "Wow.exe").write_bytes(b"wow")
+            for name in ["DragonUI", "DragonUI_Options", "DreamQuestMap"]:
+                addon = root / "Interface/AddOns" / name
+                addon.mkdir(parents=True)
+                (addon / (name + ".toc")).write_text("## Interface: 30300")
+            result = build_manifest(root, "20261004", "https://example.test")
+            self.assertEqual([item["path"] for item in result["files"]],
+                             ["Interface/AddOns/DreamQuestMap/DreamQuestMap.toc", "Wow.exe"])
+
     def test_lists_files_removed_since_previous_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

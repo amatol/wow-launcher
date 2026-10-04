@@ -24,11 +24,15 @@ def describe_addon(source: Path, version: str, base_url: str, description: str =
     if len({folder.casefold() for folder in folders}) != len(folders) or any(not SAFE_NAME.fullmatch(folder) for folder in folders):
         raise ValueError(f"addon has invalid component folders: {source}")
     for path in source.rglob("*"):
+        if any(part.casefold() == ".git" for part in path.relative_to(source).parts):
+            continue
         if path.is_symlink():
             raise ValueError(f"addon contains a symbolic link: {path}")
     files = []
     for component in components:
         for path in sorted(component.rglob("*")):
+            if any(part.casefold() == ".git" for part in path.relative_to(source).parts):
+                continue
             if not path.is_file():
                 continue
             source_relative = path.relative_to(source).as_posix()

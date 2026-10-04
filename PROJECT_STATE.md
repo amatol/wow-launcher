@@ -2,6 +2,20 @@
 
 Последнее обновление: 2026-10-04
 
+## Исправление скачивания аддонов — 04.10.2026
+
+- Две пользовательские попытки установки DragonUI завершились HTTP 429;
+  nginx зарегистрировал отказы на файлах combo.lua и boss.lua.
+- В location /launcher/addons/ установлен limit_req zone=per_ip_requests
+  burst=100 без nodelay: превышение 10 запросов/с сглаживается ожиданием.
+  Лимиты соединений и скорости сохранены. Рабочий конфиг и шаблон
+  /root/launcher/deploy/nginx-dreamworld-launcher.conf синхронизированы.
+- Резерв: /var/backups/wowserver/addons-rate-limit-20261004/nginx-before.conf.
+  Выполнены nginx -t и systemctl reload nginx; служба active.
+- Полная HTTPS-установка штатным install_addon во временный каталог PASS:
+  688 файлов, 162131671 байт, размеры/SHA-256 совпадают, .git отсутствует.
+- Бинарники и даты версий клиента/лаунчера не менялись.
+
 ## DragonUI 2.5 — опубликован 04.10.2026
 
 - Пользователь обновил /opt/azerothcore/addons/DragonUI, main,

@@ -114,9 +114,11 @@ def backup_builtin_vc_files(prefix):
     """MSI не заменяет Wine DLL с более высоким номером версии (Wine #57518)."""
     backup_root = Path(prefix) / '.dreamworld-vc-builtin-backup'
     moved = []
-    names = ('msvcp140', 'msvcp140_2')
+    names = ('msvcp140', 'msvcp140_2', 'vcruntime140_1')
     for directory in ('syswow64', 'system32'):
         for name in names:
+            if name == 'vcruntime140_1' and directory != 'system32':
+                continue
             source = Path(prefix) / 'drive_c/windows' / directory / (name + '.dll')
             if not source.is_file():
                 continue
@@ -127,8 +129,13 @@ def backup_builtin_vc_files(prefix):
             backup.parent.mkdir(parents=True, exist_ok=True)
             if not backup.exists():
                 shutil.copy2(source, backup)
-            source.unlink()
             moved.append((source, backup))
+    try:
+        for source, backup in moved:
+            source.unlink()
+    except Exception:
+        restore_missing_builtins(moved)
+        raise
     return moved
 
 

@@ -1,7 +1,9 @@
 import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+import io
+import hashlib
 from core.macos_setup import prepare_game_config, native_runtime_ready, runtime_files, prepare_wine_prefix
 
 
@@ -36,6 +38,16 @@ class MacSetupTests(unittest.TestCase):
                 self.assertIn('SET gxWindow "0"', config.read_bytes()[2:].decode(encoding))
                 self.assertIn('SET gxResolution "1280x800"', config.read_bytes()[2:].decode(encoding))
 
+    def test_utf8_bom_keeps_first_setting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'WTF/Config.wtf'
+            config.parent.mkdir()
+            original = b'\xef\xbb\xbfSET gxResolution "1920x1080"\n'
+            config.write_bytes(original)
+            prepare_game_config(directory)
+            self.assertTrue(config.read_bytes().startswith(original))
+            self.assertNotIn(b'1280x800', config.read_bytes())
+
     def test_builtin_dll_is_not_native_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             for path in runtime_files(directory):
@@ -59,3 +71,45 @@ class MacSetupTests(unittest.TestCase):
                 prepare_wine_prefix(Path(directory), directory, {'WINEPREFIX': str(prefix)}, None)
                 run.assert_not_called()
                 download.assert_not_called()
+
+
+class PrefixFailureTests(unittest.TestCase):
+    def test_checksum_failure_never_runs_vc_installer_or_marks_ready(self):
+        with tempfile.TemporaryDirectory() as directory:
+            resources = Path(directory) / 'resources'
+            mono = resources / 'Wine/share/wine/mono/wine-mono-11.2.0-x86.msi'
+            mono.parent.mkdir(parents=True)
+            mono.touch()
+            prefix = Path(directory) / '.dreamworld-wine'
+            (prefix / 'drive_c/windows/mono/mono-2.0').mkdir(parents=True)
+            with patch('core.macos_setup.run_wine_setup') as run, patch('core.macos_setup.urllib.request.urlopen', return_value=io.BytesIO(b'corrupt')):
+                with self.assertRaisesRegex(RuntimeError, 'Контрольная сумма'):
+                    prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix)}, Mock())
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(run.call_args.args[1], ['wineboot', '--init'])
+            self.assertFalse((prefix / '.dreamworld-vcredist-v1').exists())
+
+    def test_failed_installer_can_be_retried_and_only_success_marks_ready(self):
+        with tempfile.TemporaryDirectory() as directory:
+            resources = Path(directory) / 'resources'
+            mono = resources / 'Wine/share/wine/mono/wine-mono-11.2.0-x86.msi'
+            mono.parent.mkdir(parents=True)
+            mono.touch()
+            prefix = Path(directory) / '.dreamworld-wine'
+            (prefix / 'drive_c/windows/mono/mono-2.0').mkdir(parents=True)
+            payload = b'test installer'
+            digest = hashlib.sha256(payload).hexdigest()
+            def install(wine, args, env, game_dir, log):
+                if args[0].endswith('vc_redist.x64.exe'):
+                    for path in runtime_files(prefix):
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        path.write_bytes(b'MZ' + b'\0' * 126)
+            with patch('core.macos_setup.VC_HASHES', {'x86': digest, 'x64': digest}), patch('core.macos_setup.urllib.request.urlopen', side_effect=lambda *a, **k: io.BytesIO(payload)):
+                with patch('core.macos_setup.run_wine_setup', side_effect=[None, RuntimeError('install failed')]):
+                    with self.assertRaisesRegex(RuntimeError, 'install failed'):
+                        prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix)}, Mock())
+                self.assertFalse((prefix / '.dreamworld-vcredist-v1').exists())
+                with patch('core.macos_setup.run_wine_setup', side_effect=install) as run:
+                    prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix)}, Mock())
+                    self.assertEqual(run.call_count, 3)
+                self.assertTrue((prefix / '.dreamworld-vcredist-v1').is_file())

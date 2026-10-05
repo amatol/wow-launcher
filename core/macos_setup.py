@@ -26,6 +26,8 @@ def prepare_game_config(game_dir):
     # сохраняем побайтно: ключи и добавляемые значения состоят из ASCII.
     encoding = 'utf-16' if original.startswith((b'\xff\xfe', b'\xfe\xff')) else 'latin-1'
     text = original.decode(encoding)
+    if original.startswith(b'\xef\xbb\xbf'):
+        text = original[3:].decode(encoding)
     missing = {key: value for key, value in DEFAULT_SETTINGS.items()
                if not re.search(r'^\s*SET\s+' + key + r'\s+"', text, re.I | re.M)}
     if not missing:

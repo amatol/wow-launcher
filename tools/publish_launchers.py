@@ -19,7 +19,7 @@ def metadata(path, url, version):
     content = path.read_bytes()
     return {'version': version, 'download_url': url, 'size': len(content),
             'sha256': hashlib.sha256(content).hexdigest(),
-            'changelog': 'Тестовая версия macOS для Apple Silicon; лаунчеры Windows и Mac рядом с клиентом.'}
+            'changelog': 'macOS: подготовка настроек экрана, встроенный Wine Mono и установка Visual C++ при первом запуске.'}
 
 
 def atomic_json(path, data):

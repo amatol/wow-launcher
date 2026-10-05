@@ -115,6 +115,9 @@ def prepare_wine_prefix(resources, game_dir, env, log):
         return
     wine = resources / 'Wine/bin/wine'
     install_env = env.copy()
+    # x87-перехватчик нужен игре, но не служебным программам Wine и MSI.
+    # Upstream DependencyService тоже запускает установщики без него.
+    install_env.pop('ROSETTA_X87_PATH', None)
     install_env['WINEDLLOVERRIDES'] = 'd3d9=b;winemenubuilder.exe,mscoree,mshtml=d'
     boot_env = install_env.copy()
     boot_env['WINEDLLOVERRIDES'] = 'd3d9=b;winemenubuilder.exe,mshtml=d'

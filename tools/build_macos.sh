@@ -20,7 +20,7 @@ resources=dist/Dreamworld.app/Contents/Resources
 cp -R build/wine-runtime "$resources/Wine"
 # Версия и SHA-256 из appwiz.cpl закреплённого Wine 11.13.
 mkdir -p "$resources/Wine/share/wine/mono"
-curl --fail --location --retry 3 \
+curl --fail --location --retry 3 --connect-timeout 30 --max-time 180 \
   https://github.com/wine-mono/wine-mono/releases/download/wine-mono-11.2.0/wine-mono-11.2.0-x86.msi \
   -o "$resources/Wine/share/wine/mono/wine-mono-11.2.0-x86.msi"
 MONO_FILE="$resources/Wine/share/wine/mono/wine-mono-11.2.0-x86.msi" python - <<'MONO'

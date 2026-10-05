@@ -84,7 +84,7 @@ class PrefixFailureTests(unittest.TestCase):
             (prefix / 'drive_c/windows/mono/mono-2.0').mkdir(parents=True)
             with patch('core.macos_setup.run_wine_setup') as run, patch('core.macos_setup.urllib.request.urlopen', return_value=io.BytesIO(b'corrupt')):
                 with self.assertRaisesRegex(RuntimeError, 'Контрольная сумма'):
-                    prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix)}, Mock())
+                    prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix), 'ROSETTA_X87_PATH': '/game-only'}, Mock())
             self.assertEqual(run.call_count, 1)
             self.assertEqual(run.call_args.args[1], ['wineboot', '--init'])
             self.assertFalse((prefix / '.dreamworld-vcredist-v1').exists())
@@ -107,9 +107,11 @@ class PrefixFailureTests(unittest.TestCase):
             with patch('core.macos_setup.VC_HASHES', {'x86': digest, 'x64': digest}), patch('core.macos_setup.urllib.request.urlopen', side_effect=lambda *a, **k: io.BytesIO(payload)):
                 with patch('core.macos_setup.run_wine_setup', side_effect=[None, RuntimeError('install failed')]):
                     with self.assertRaisesRegex(RuntimeError, 'install failed'):
-                        prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix)}, Mock())
+                        prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix), 'ROSETTA_X87_PATH': '/game-only'}, Mock())
                 self.assertFalse((prefix / '.dreamworld-vcredist-v1').exists())
                 with patch('core.macos_setup.run_wine_setup', side_effect=install) as run:
-                    prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix)}, Mock())
+                    prepare_wine_prefix(resources, directory, {'WINEPREFIX': str(prefix), 'ROSETTA_X87_PATH': '/game-only'}, Mock())
                     self.assertEqual(run.call_count, 3)
+                    for call in run.call_args_list:
+                        self.assertNotIn('ROSETTA_X87_PATH', call.args[2])
                 self.assertTrue((prefix / '.dreamworld-vcredist-v1').is_file())

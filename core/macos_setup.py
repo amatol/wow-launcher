@@ -4,10 +4,13 @@ import os
 from pathlib import Path
 import re
 import shutil
+import ssl
 import subprocess
 import tempfile
 import time
 import urllib.request
+
+import certifi
 
 
 DEFAULT_SETTINGS = {'gxResolution': '1280x800', 'gxWindow': '1', 'gxMaximize': '0'}
@@ -173,7 +176,7 @@ def prepare_wine_prefix(resources, game_dir, env, log):
                 installer = Path(directory) / f'vc_redist.{arch}.exe'
                 url = VC_BASE + digest.upper() + f'/VC_redist.{arch}.exe'
                 try:
-                    with urllib.request.urlopen(url, timeout=30) as response, installer.open('wb') as stream:
+                    with urllib.request.urlopen(url, timeout=30, context=ssl.create_default_context(cafile=certifi.where())) as response, installer.open('wb') as stream:
                         size = 0
                         while chunk := response.read(1024 * 1024):
                             size += len(chunk)

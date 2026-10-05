@@ -115,3 +115,27 @@ class PrefixFailureTests(unittest.TestCase):
                     for call in run.call_args_list:
                         self.assertNotIn('ROSETTA_X87_PATH', call.args[2])
                 self.assertTrue((prefix / '.dreamworld-vcredist-v1').is_file())
+
+
+class BuiltinBackupTests(unittest.TestCase):
+    def test_only_wine_stubs_are_backed_up_and_failure_restores_missing_files(self):
+        from core.macos_setup import backup_builtin_vc_files, restore_missing_builtins
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / 'drive_c/windows/syswow64'
+            folder.mkdir(parents=True)
+            stub = folder / 'msvcp140.dll'
+            builtin = b'MZ' + b'\0' * 62 + b'Wine builtin DLL'
+            stub.write_bytes(builtin)
+            native = folder / 'vcruntime140.dll'
+            native.write_bytes(b'MZ native user file')
+            moved = backup_builtin_vc_files(directory)
+            self.assertEqual(len(moved), 1)
+            self.assertFalse(stub.exists())
+            self.assertEqual(moved[0][1].read_bytes(), builtin)
+            self.assertEqual(native.read_bytes(), b'MZ native user file')
+            restore_missing_builtins(moved)
+            self.assertEqual(stub.read_bytes(), builtin)
+            moved = backup_builtin_vc_files(directory)
+            stub.write_bytes(b'MZ installed Microsoft file')
+            restore_missing_builtins(moved)
+            self.assertEqual(stub.read_bytes(), b'MZ installed Microsoft file')

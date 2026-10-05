@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import urllib.request
 
 
@@ -105,6 +106,37 @@ def run_wine_setup(wine, args, env, game_dir, log, timeout=300):
         raise RuntimeError(f'Подготовка Wine завершилась с кодом {result.returncode}. См. .dreamworld-wine.log.')
 
 
+
+def backup_builtin_vc_files(prefix):
+    """MSI не заменяет Wine DLL с более высоким номером версии (Wine #57518)."""
+    backup_root = Path(prefix) / '.dreamworld-vc-builtin-backup'
+    moved = []
+    names = VC_OVERRIDES.split('=')[0].split(',')
+    for directory in ('syswow64', 'system32'):
+        for name in names:
+            source = Path(prefix) / 'drive_c/windows' / directory / (name + '.dll')
+            if not source.is_file():
+                continue
+            with source.open('rb') as stream:
+                if b'Wine builtin DLL' not in stream.read(128):
+                    continue
+            backup = backup_root / directory / source.name
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            if not backup.exists():
+                shutil.copy2(source, backup)
+            source.unlink()
+            moved.append((source, backup))
+    return moved
+
+
+def restore_missing_builtins(moved):
+    # При сбое сохраняем уже установленные Microsoft DLL, возвращаем только
+    # ещё отсутствующие файлы. Резерв остаётся внутри локального префикса.
+    for source, backup in moved:
+        if not source.exists():
+            shutil.copy2(backup, source)
+
+
 def prepare_wine_prefix(resources, game_dir, env, log):
     """Установить VC++ один раз; повторить проверку DLL при каждом запуске."""
     prefix = Path(env['WINEPREFIX'])
@@ -131,26 +163,35 @@ def prepare_wine_prefix(resources, game_dir, env, log):
         raise RuntimeError('Wine Mono не установлен. См. .dreamworld-wine.log.')
     if marker.is_file() and native_runtime_ready(prefix):
         return
-    # Не поставляем префикс или чужие DLL: официальные установщики Microsoft
-    # загружаются на машине игрока, фиксируются URL и SHA-256.
-    with tempfile.TemporaryDirectory(prefix='dreamworld-vcredist-') as directory:
-        for arch, digest in VC_HASHES.items():
-            installer = Path(directory) / f'vc_redist.{arch}.exe'
-            url = VC_BASE + digest.upper() + f'/VC_redist.{arch}.exe'
-            try:
-                with urllib.request.urlopen(url, timeout=30) as response, installer.open('wb') as stream:
-                    size = 0
-                    while chunk := response.read(1024 * 1024):
-                        size += len(chunk)
-                        if size > 40 * 1024 * 1024:
-                            raise RuntimeError('Слишком большой установщик Visual C++.')
-                        stream.write(chunk)
-            except OSError as error:
-                raise RuntimeError('Не удалось скачать Visual C++ с сайта Microsoft. Проверьте интернет и повторите запуск.') from error
-            if hashlib.sha256(installer.read_bytes()).hexdigest() != digest:
-                raise RuntimeError('Контрольная сумма Visual C++ не совпала. Установщик не запущен.')
-            run_wine_setup(wine, [str(installer), '/install', '/quiet', '/norestart'],
-                           install_env, game_dir, log)
-    if not native_runtime_ready(prefix):
-        raise RuntimeError('После установки не найдены библиотеки Microsoft Visual C++. См. .dreamworld-wine.log.')
+    moved = backup_builtin_vc_files(prefix)
+    try:
+        # Не поставляем префикс или чужие DLL: официальные установщики Microsoft
+        # загружаются на машине игрока, фиксируются URL и SHA-256.
+        with tempfile.TemporaryDirectory(prefix='dreamworld-vcredist-') as directory:
+            for arch, digest in VC_HASHES.items():
+                installer = Path(directory) / f'vc_redist.{arch}.exe'
+                url = VC_BASE + digest.upper() + f'/VC_redist.{arch}.exe'
+                try:
+                    with urllib.request.urlopen(url, timeout=30) as response, installer.open('wb') as stream:
+                        size = 0
+                        while chunk := response.read(1024 * 1024):
+                            size += len(chunk)
+                            if size > 40 * 1024 * 1024:
+                                raise RuntimeError('Слишком большой установщик Visual C++.')
+                            stream.write(chunk)
+                except OSError as error:
+                    raise RuntimeError('Не удалось скачать Visual C++ с сайта Microsoft. Проверьте интернет и повторите запуск.') from error
+                if hashlib.sha256(installer.read_bytes()).hexdigest() != digest:
+                    raise RuntimeError('Контрольная сумма Visual C++ не совпала. Установщик не запущен.')
+                run_wine_setup(wine, [str(installer), '/install', '/quiet', '/norestart', '/log',
+                                      str(prefix / f'vc-redist-{arch}.log')],
+                               install_env, game_dir, log)
+        deadline = time.monotonic() + 20
+        while not native_runtime_ready(prefix) and time.monotonic() < deadline:
+            time.sleep(0.5)
+        if not native_runtime_ready(prefix):
+            raise RuntimeError('После установки не найдены библиотеки Microsoft Visual C++. См. .dreamworld-wine.log.')
+    except Exception:
+        restore_missing_builtins(moved)
+        raise
     marker.write_text('Microsoft Visual C++ x86/x64\n' + '\n'.join(VC_HASHES.values()) + '\n', encoding='ascii')

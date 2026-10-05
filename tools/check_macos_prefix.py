@@ -28,6 +28,12 @@ with tempfile.TemporaryDirectory(prefix='dreamworld-prefix-check-') as directory
         print('Wine prefix: Mono + native VC++ x86/x64 OK', flush=True)
     except Exception:
         print((Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')[-16000:])
+        for path in (Path(env['WINEPREFIX'])).glob('vc-redist-*.log'):
+            print(path.name, path.read_text(errors='replace')[-12000:])
+        from core.macos_setup import runtime_files
+        for path in runtime_files(env['WINEPREFIX']):
+            print(path.name, path.parent.name, path.stat().st_size if path.exists() else 'missing',
+                  path.read_bytes()[:96] if path.exists() else '')
         raise
     finally:
         env.pop('ROSETTA_X87_PATH', None)

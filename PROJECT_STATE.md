@@ -2,6 +2,42 @@
 
 Последнее обновление: 2026-10-05
 
+## macOS: настройки, Mono и native Visual C++ — опубликовано 05.10.2026
+
+- Выпуск 20261005 из c9323c5bda908fd65867032334cd7f7a58fca586. GitHub CI
+  37351454062 успешен: 73 теста на Windows и Apple Silicon macOS 15.7.9,
+  подпись/запуск готового бандла и после распаковки самообновлением PASS.
+- Чистый префикс на настоящем Mac: Wine Mono 11.2.0 установлен из бандла,
+  native VC14 x86/x64 подтверждён по DLL; повторная подготовка пропущена.
+  Исправлены отдельное окружение setup без x87, Windows-путь /log,
+  RunAsInvoker/native,builtin и пропуск MSI более новых Wine заглушек
+  msvcp140/msvcp140_2 и x64 vcruntime140_1. Резерв всех таких файлов
+  создаётся до удаления; при сбое возвращаются отсутствующие DLL.
+- При открытии лаунчера рядом с Wow.exe и перед игрой добавляются только
+  отсутствующие gxResolution=1280x800, gxWindow=1, gxMaximize=0.
+  Пользовательские значения/кодировка/байты сохраняются, есть резерв.
+  Установка выполняется в QThread, ошибка позволяет повторить запуск.
+  Для первого VC++ нужна сеть; TLS использует certifi из бандла.
+- Выполнены gh run download 37351454062 для Dreamworld-exe/Dreamworld-macos
+  в /tmp/dreamworld-20261005-final/{windows,macos}; затем из /root/launcher:
+  PYTHONPATH=. .venv/bin/python tools/publish_launchers.py
+  /tmp/dreamworld-20261005-final/windows/Dreamworld.exe
+  /tmp/dreamworld-20261005-final/macos/Dreamworld.app.zip
+  --backup /var/backups/wowserver/launchers-20261005.
+- Полные релизы проверены по HTTPS до публикации манифестов; обе версии
+  установлены в /opt/azerothcore/client. Все 1837 файлов установленного .app
+  совпали по SHA-256 с архивом; MSI Mono тоже проверен. Три HTTPS-манифеста
+  совпали побайтно; клиентский манифест 20261005 сохраняет 265 файлов и
+  removed_files. Скрипт проверки и publication.json сохранены в резерве.
+- Windows: 41 527 897 байт, SHA256
+  b0353b32a6744283d14593c010e4c9e61be2665df872020c888962ee8ac39d35.
+  macOS ZIP: 249 140 045 байт, SHA256
+  e459f76d3bb80cb49d7c1688131d9fc4c54f0e9cf524e2694f3b58b228cf2a0d.
+- Отчёт: /root/wowserver/reports/launchers-publication-20261005.json.
+  Игровые службы/серверная дата не менялись, рестартов не было.
+  Пользовательский amatol.PNG сохранён. Следующее: игрок обновляет
+  Dreamworld.app и проверяет запуск WoW/вход в мир; игра в CI не запускалась.
+
 ## Подготовка запуска Apple Silicon — 05.10.2026
 
 - Добавлены отсутствующие графические SET при открытии лаунчера и перед

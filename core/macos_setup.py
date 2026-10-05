@@ -111,7 +111,7 @@ def backup_builtin_vc_files(prefix):
     """MSI не заменяет Wine DLL с более высоким номером версии (Wine #57518)."""
     backup_root = Path(prefix) / '.dreamworld-vc-builtin-backup'
     moved = []
-    names = VC_OVERRIDES.split('=')[0].split(',')
+    names = ('msvcp140', 'msvcp140_2')
     for directory in ('syswow64', 'system32'):
         for name in names:
             source = Path(prefix) / 'drive_c/windows' / directory / (name + '.dll')
@@ -150,7 +150,8 @@ def prepare_wine_prefix(resources, game_dir, env, log):
     # x87-перехватчик нужен игре, но не служебным программам Wine и MSI.
     # Upstream DependencyService тоже запускает установщики без него.
     install_env.pop('ROSETTA_X87_PATH', None)
-    install_env['WINEDLLOVERRIDES'] = 'd3d9=b;winemenubuilder.exe,mscoree,mshtml=d'
+    install_env['__COMPAT_LAYER'] = 'RunAsInvoker'
+    install_env['WINEDLLOVERRIDES'] = 'd3d9=b;' + VC_OVERRIDES + ';winemenubuilder.exe,mscoree,mshtml=d'
     boot_env = install_env.copy()
     boot_env['WINEDLLOVERRIDES'] = 'd3d9=b;winemenubuilder.exe,mshtml=d'
     if not mono.is_file():
@@ -184,7 +185,7 @@ def prepare_wine_prefix(resources, game_dir, env, log):
                 if hashlib.sha256(installer.read_bytes()).hexdigest() != digest:
                     raise RuntimeError('Контрольная сумма Visual C++ не совпала. Установщик не запущен.')
                 run_wine_setup(wine, [str(installer), '/install', '/quiet', '/norestart', '/log',
-                                      str(prefix / f'vc-redist-{arch}.log')],
+                                      'Z:' + str(prefix / f'vc-redist-{arch}.log').replace('/', '\\')],
                                install_env, game_dir, log)
         deadline = time.monotonic() + 20
         while not native_runtime_ready(prefix) and time.monotonic() < deadline:

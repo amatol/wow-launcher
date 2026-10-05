@@ -90,8 +90,8 @@ def main():
     temporary = args.client / '.Dreamworld.exe.new'
     shutil.copy2(args.windows, temporary)
     os.replace(temporary, args.client / 'Dreamworld.exe')
-    atomic_json(public / 'launcher_manifest.json', {**launchers['windows'], 'launchers': launchers})
-    atomic_json(public / 'launcher_manifest_macos.json', {**launchers['macos'], 'launchers': launchers})
+    atomic_json(public / 'launcher_manifest.json', launchers['windows'])
+    atomic_json(public / 'launcher_manifest_macos.json', launchers['macos'])
     previous['version'] = version
     previous['launchers'] = launchers
     atomic_json(public / 'manifest.json', previous)

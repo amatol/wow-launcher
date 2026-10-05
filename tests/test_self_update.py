@@ -11,6 +11,30 @@ from core.self_update import (
 
 
 class SelfUpdateTests(unittest.TestCase):
+    def test_self_update_does_not_install_companion_from_legacy_manifest(self):
+        from pathlib import Path
+        from core.self_update import download_update
+        manifest = {"download_url": "https://example.test/launcher",
+                    "size": 3, "sha256": "unused", "launchers": {
+                        "windows": {"size": 100}, "macos": {"size": 200}}}
+        for platform in ("win32", "darwin"):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as directory:
+                def download(**kwargs):
+                    Path(kwargs["dest_path"]).write_bytes(b"new")
+                    kwargs["progress_cb"](3, 3, "готово")
+                    return True, ""
+                progress = mock.Mock()
+                with mock.patch("core.self_update.sys.platform", platform), \
+                        mock.patch("core.self_update.tempfile.mkdtemp", return_value=directory), \
+                        mock.patch("updater.net_utils.download_with_retries", side_effect=download) as fetch, \
+                        mock.patch("core.launcher_bundle.sync_companion", side_effect=RuntimeError("недоступно")) as companion:
+                    ok, path = download_update(manifest, progress)
+                self.assertTrue(ok)
+                self.assertEqual(Path(path).read_bytes(), b"new")
+                fetch.assert_called_once()
+                progress.assert_called_once_with(3, 3, "готово")
+                companion.assert_not_called()
+
     def test_daily_release_is_newer_than_previous_day(self):
         self.assertGreater(_compare_versions("20260802", "20260801"), 0)
 

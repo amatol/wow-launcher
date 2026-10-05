@@ -13,7 +13,16 @@ import zipfile
 from updater.net_utils import download_with_retries
 
 
-def extract_app(archive, destination):
+class UpdateCancelled(RuntimeError):
+    """Отмена до переключения установленной версии."""
+
+
+def check_cancelled(cancel_check):
+    if cancel_check and cancel_check():
+        raise UpdateCancelled("Обновление отменено.")
+
+
+def extract_app(archive, destination, cancel_check=None):
     """Распаковать только Dreamworld.app, сохранив права и внутренние symlink."""
     root = Path(destination).resolve()
     with zipfile.ZipFile(archive) as source:
@@ -21,6 +30,7 @@ def extract_app(archive, destination):
         links = []
         seen = set()
         for item in members:
+            check_cancelled(cancel_check)
             path = PurePosixPath(item.filename)
             if (not path.parts or path.parts[0] != "Dreamworld.app" or
                     path.is_absolute() or ".." in path.parts or "\\" in item.filename):
@@ -43,10 +53,13 @@ def extract_app(archive, destination):
             else:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with source.open(item) as incoming, target.open("wb") as outgoing:
-                    shutil.copyfileobj(incoming, outgoing)
+                    while chunk := incoming.read(1024 * 1024):
+                        check_cancelled(cancel_check)
+                        outgoing.write(chunk)
                 target.chmod((mode & 0o777) or 0o644)
         # Ссылки создаём последними: файлы не могут записываться через них.
         for target, link in links:
+            check_cancelled(cancel_check)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.symlink_to(link)
     binary = root / "Dreamworld.app/Contents/MacOS/Dreamworld"
@@ -55,11 +68,12 @@ def extract_app(archive, destination):
     return root / "Dreamworld.app"
 
 
-def install_app(archive, game_dir):
+def install_app(archive, game_dir, cancel_check=None):
     """Атомарно заменить бандл; при ошибке вернуть прежнюю версию."""
     game_dir = Path(game_dir)
     with tempfile.TemporaryDirectory(prefix=".dreamworld-app-", dir=game_dir) as staging:
-        app = extract_app(archive, staging)
+        app = extract_app(archive, staging, cancel_check)
+        check_cancelled(cancel_check)
         target = game_dir / "Dreamworld.app"
         old = game_dir / "Dreamworld.app.old"
         if old.exists():
@@ -99,7 +113,8 @@ def companion_needed(raw, game_dir):
         return True
 
 
-def sync_companion(raw, game_dir):
+def sync_companion(raw, game_dir, progress_cb=None, cancel_check=None):
+    check_cancelled(cancel_check)
     platform, entry = _companion(raw)
     if not entry or not companion_needed(raw, game_dir):
         return
@@ -109,12 +124,21 @@ def sync_companion(raw, game_dir):
         raise ValueError("Некорректные метаданные второго лаунчера")
     with tempfile.TemporaryDirectory(prefix=".dreamworld-launchers-", dir=game_dir) as staging:
         archive = Path(staging) / "download"
+        name = "Windows" if platform == "windows" else "macOS"
+        def progress(done, total, message):
+            if progress_cb:
+                progress_cb(done, total, f"Лаунчер {name}: {message}")
+        progress(0, entry["size"], "скачивание")
         ok, error = download_with_retries(entry["download_url"], str(archive),
-                                         entry["size"], entry["sha256"], max_retries=3)
+                                         entry["size"], entry["sha256"], max_retries=3,
+                                         progress_cb=progress, cancel_check=cancel_check)
+        check_cancelled(cancel_check)
         if not ok:
             raise RuntimeError("Не удалось загрузить второй лаунчер: " + str(error))
+        progress(0, 0, "установка")
+        check_cancelled(cancel_check)
         if platform == "macos":
-            install_app(archive, game_dir)
+            install_app(archive, game_dir, cancel_check)
         else:
             os.replace(archive, Path(game_dir) / "Dreamworld.exe")
         state_path = Path(game_dir) / ".dreamworld-launchers.json"

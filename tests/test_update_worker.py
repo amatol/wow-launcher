@@ -71,3 +71,25 @@ class UpdateWorkerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class CompanionCancellationTests(unittest.TestCase):
+    def test_cancel_at_companion_stage_never_commits_client_version(self):
+        for changed in (False, True):
+            with self.subTest(changed=changed):
+                worker = UpdateWorker('/unused', 'https://example.invalid/manifest.json')
+                results = []
+                worker.finished_signal.connect(lambda *args: results.append(args))
+                manifest = Manifest.from_dict({'version': '20261005', 'files': []})
+                def companion(*args, **kwargs):
+                    worker.cancel()
+                    self.assertTrue(kwargs['cancel_check']())
+                with patch.object(Config, 'has_complete_client_layout', return_value=True), \
+                        patch('ui.main_window.Manifest.fetch', return_value=manifest), \
+                        patch('ui.main_window.filter_needed', return_value=[object()] if changed else []), \
+                        patch('ui.main_window.compute_existing_removed_files', return_value=[]), \
+                        patch('ui.main_window.HTTPUpdater.apply_all', return_value=(True, 1)), \
+                        patch('core.launcher_bundle.sync_companion', side_effect=companion), \
+                        patch('ui.main_window.set_current_version') as version:
+                    worker.run()
+                self.assertEqual(results, [(False, 'Обновление отменено.')])
+                version.assert_not_called()

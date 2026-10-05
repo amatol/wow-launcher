@@ -13,6 +13,7 @@ from PyQt5.QtCore import QSettings, QThread, pyqtSignal, Qt, QUrl
 from PyQt5.QtGui import QDesktopServices
 
 from config import Config
+from core.launcher_bundle import UpdateCancelled
 from core.version import check_wow_executable, launch_wow, get_current_version, set_current_version
 from core.self_update import (
     fetch_launcher_manifest, is_update_available,
@@ -117,7 +118,14 @@ class UpdateWorker(QThread):
             from core.launcher_bundle import sync_companion
 
             if not needed and not removed:
-                sync_companion(manifest.raw, self.game_dir)
+                sync_companion(
+                    manifest.raw, self.game_dir,
+                    progress_cb=lambda done, total, message: self.progress_signal.emit(
+                        message, int(done * 100 / total) if total else -1),
+                    cancel_check=lambda: self._cancel,
+                )
+                if self._cancel:
+                    raise UpdateCancelled("Обновление отменено.")
                 set_current_version(manifest.version)
                 self.finished_signal.emit(True, "Клиент актуален. Обновлений нет.")
                 return
@@ -136,7 +144,14 @@ class UpdateWorker(QThread):
                 if self._cancel:
                     self.finished_signal.emit(False, "Обновление отменено.")
                     return
-                sync_companion(manifest.raw, self.game_dir)
+                sync_companion(
+                    manifest.raw, self.game_dir,
+                    progress_cb=lambda done, total, message: self.progress_signal.emit(
+                        message, int(done * 100 / total) if total else -1),
+                    cancel_check=lambda: self._cancel,
+                )
+                if self._cancel:
+                    raise UpdateCancelled("Обновление отменено.")
                 set_current_version(manifest.version)
                 self.finished_signal.emit(
                     True, f"Обновление завершено. Обновлено файлов: {count}, удалено: {len(removed)}"
@@ -153,6 +168,8 @@ class UpdateWorker(QThread):
                 "Проверьте подключение к интернету и повторите попытку.",
             )
 
+        except UpdateCancelled:
+            self.finished_signal.emit(False, "Обновление отменено.")
         except Exception as e:
             self.finished_signal.emit(False, f"Ошибка: {e}")
 

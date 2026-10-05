@@ -119,3 +119,52 @@ class CompanionTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     sync_companion(raw, directory)
             self.assertEqual(exe.read_bytes(), b'old')
+
+class CompanionCancelTests(unittest.TestCase):
+    def test_cancel_download_preserves_launcher_and_state_on_both_platforms(self):
+        from core.launcher_bundle import UpdateCancelled
+        for platform, companion in (('darwin', 'windows'), ('win32', 'macos')):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                old = root / 'Dreamworld.exe'
+                old.write_bytes(b'original')
+                state = root / '.dreamworld-launchers.json'
+                state.write_text('{}')
+                cancelled = False
+                def download(*args, **kwargs):
+                    nonlocal cancelled
+                    kwargs['progress_cb'](2, 3, 'скачивание')
+                    cancelled = True
+                    self.assertTrue(kwargs['cancel_check']())
+                    return False, 'отменено'
+                raw = {'launchers': {companion: {'download_url': 'https://example.test/file',
+                        'size': 3, 'sha256': '0' * 64}}}
+                progress = Mock()
+                with patch('core.launcher_bundle.sys.platform', platform), \
+                        patch('core.launcher_bundle.download_with_retries', side_effect=download), \
+                        self.assertRaises(UpdateCancelled):
+                    sync_companion(raw, directory, progress, lambda: cancelled)
+                self.assertEqual(old.read_bytes(), b'original')
+                self.assertEqual(state.read_text(), '{}')
+                self.assertFalse(list(root.glob('.dreamworld-launchers-*')))
+                self.assertIn(companion == 'windows' and 'Windows' or 'macOS', progress.call_args.args[2])
+
+    def test_cancel_extraction_keeps_old_app(self):
+        from core.launcher_bundle import UpdateCancelled
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / 'new.zip'
+            MacLauncherTests().archive(archive)
+            old = root / 'Dreamworld.app'
+            old.mkdir()
+            (old / 'original').write_bytes(b'original')
+            calls = 0
+            def cancel():
+                nonlocal calls
+                calls += 1
+                return calls >= 2
+            with self.assertRaises(UpdateCancelled):
+                install_app(archive, root, cancel)
+            self.assertEqual((old / 'original').read_bytes(), b'original')
+            self.assertFalse((root / 'Dreamworld.app.old').exists())
+            self.assertFalse(list(root.glob('.dreamworld-app-*')))

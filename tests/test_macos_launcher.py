@@ -44,7 +44,7 @@ class MacLauncherTests(unittest.TestCase):
             wow.touch()
             process = Mock()
             process.wait.side_effect = subprocess.TimeoutExpired('wine', 2)
-            with patch('core.macos.app_bundle_path', return_value=str(bundle)), patch('core.macos.subprocess.Popen', return_value=process) as launch, patch.dict(os.environ, {'WINEPREFIX': '/wrong', 'WINEARCH': 'win32'}):
+            with patch('core.macos.app_bundle_path', return_value=str(bundle)), patch('core.macos.prepare_wine_prefix'), patch('core.macos.subprocess.Popen', return_value=process) as launch, patch.dict(os.environ, {'WINEPREFIX': '/wrong', 'WINEARCH': 'win32'}):
                 launch_wow_macos(wow, str(game))
             args, kwargs = launch.call_args
             self.assertEqual(args[0][1], str(wow.resolve()))

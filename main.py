@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QIcon
 
 from config import Config
@@ -52,6 +52,13 @@ def main():
 
     # Очистка мусора от прошлых обновлений
     cleanup_self_update_files()
+
+    if sys.platform == "darwin" and Config.detect_wow_exe():
+        from core.macos_setup import prepare_game_config
+        try:
+            prepare_game_config(Config.GAME_DIR)
+        except Exception as error:
+            QMessageBox.warning(None, "Настройки WoW", f"Не удалось подготовить настройки игры: {error}")
 
     window = MainWindow()
     window.show()

@@ -2,7 +2,7 @@
 # Воспроизводимая тестовая сборка с встроенным Wine; выполнять на Apple Silicon.
 set -euo pipefail
 mkdir -p build
-# WineCX и его зависимости закреплены URL и SHA-256 в одном lock-файле.
+# Исходники WineCX и Mono закреплены URL и SHA-256 в одном lock-файле.
 test -f build/winecx/Wine/dreamworld-runtime-id
 python - <<'PY'
 from PIL import Image
@@ -12,6 +12,8 @@ pyinstaller Dreamworld-macos.spec --noconfirm
 resources=dist/Dreamworld.app/Contents/Resources
 cp -R build/winecx/Wine "$resources/Wine"
 cp -R build/winecx/ThirdParty "$resources/ThirdParty"
+# Проверки не должны случайно воспользоваться исходным путём установки Wine.
+mv build/winecx build/winecx-input
 # Внешние библиотеки Wine без symlink: Windows установит .app без привилегий.
 # Qt остаётся внутри one-file EXE и распаковывается самим PyInstaller на Mac.
 python - <<'PYCODE'
@@ -31,6 +33,17 @@ for path in sorted(root.rglob('*'), key=lambda p: len(p.parts), reverse=True):
 assert not any(path.is_symlink() for path in root.rglob('*'))
 PYCODE
 # Подпись ad-hoc для тестовой версии. Developer ID и нотариализация пока отсутствуют.
+# Свежесобранные Mach-O внутри Resources тоже подписываем после переноса dylib.
+python - <<'PY'
+from pathlib import Path
+import subprocess
+for path in Path('dist/Dreamworld.app/Contents/Resources/Wine').rglob('*'):
+    if path.is_file():
+        with path.open('rb') as stream:
+            magic = stream.read(4)
+        if magic in (b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe', b'\xca\xfe\xba\xbe'):
+            subprocess.run(['codesign', '--force', '--sign', '-', str(path)], check=True)
+PY
 codesign --force --deep --sign - dist/Dreamworld.app
 codesign --verify --deep --strict dist/Dreamworld.app
 file dist/Dreamworld.app/Contents/MacOS/Dreamworld

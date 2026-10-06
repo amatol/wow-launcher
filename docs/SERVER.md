@@ -178,7 +178,7 @@ PYTHONPATH=. .venv/bin/python tools/publish_launchers.py /path/Dreamworld.exe \
 установленного клиентского выпуска не меняется.
 
 Для Mac открыть готовый `Dreamworld.app` из папки с `Wow.exe`. Поддерживается
-Apple Silicon, macOS 14.6+ с Rosetta 2. Тестовая версия использует Wine,
+Apple Silicon, macOS 15.0+ с Rosetta 2. Тестовая версия использует Wine,
 собранный из официальных FOSS-исходников CrossOver 26.3.0 (база Wine 11.0).
 Это открытый движок без коммерческой оболочки CrossOver. Исходный архив
 и Wine Mono 10.4.1 закреплены URL/SHA-256 в tools/winecx-lock.json.

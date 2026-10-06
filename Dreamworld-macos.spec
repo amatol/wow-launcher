@@ -13,5 +13,5 @@ exe = EXE(pyz, a.scripts, a.binaries, a.datas, name='Dreamworld',
           console=False, target_arch='arm64', codesign_identity=None)
 app = BUNDLE(exe, name='Dreamworld.app', icon='build/dreamworld.icns',
              bundle_identifier='blog.amatol.dreamworld', version=Config.LAUNCHER_VERSION,
-             info_plist={'LSMinimumSystemVersion': '14.6',
+             info_plist={'LSMinimumSystemVersion': '15.0',
                          'NSHighResolutionCapable': True})

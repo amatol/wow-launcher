@@ -12,6 +12,7 @@ pyinstaller Dreamworld-macos.spec --noconfirm
 resources=dist/Dreamworld.app/Contents/Resources
 cp -R build/winecx/Wine "$resources/Wine"
 cp -R build/winecx/ThirdParty "$resources/ThirdParty"
+cp tools/build_winecx.sh tools/bundle_winecx_libraries.py "$resources/ThirdParty/"
 # Проверки не должны случайно воспользоваться исходным путём установки Wine.
 mv build/winecx build/winecx-input
 # Внешние библиотеки Wine без symlink: Windows установит .app без привилегий.

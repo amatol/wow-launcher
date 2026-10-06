@@ -6,7 +6,7 @@ import tempfile
 
 patch = Path(__file__).with_name('patches').joinpath('winecx-arpl.patch').read_text()
 added = '\n'.join(line[1:] for line in patch.splitlines() if line.startswith('+') and not line.startswith('+++'))
-helper = added[added.index('static inline BOOL emulate_arpl_register'):added.index('\n        if (emulate_arpl_register')]
+helper = added[added.index('static inline BOOL emulate_arpl_register'):added.index('\n}', added.index('static inline BOOL emulate_arpl_register')) + 2]
 preamble = '''
 #include <assert.h>
 #include <stdint.h>

@@ -24,6 +24,14 @@
 - Публичные релизы/манифесты и игровые службы пока не менялись.
   Пользовательский /root/launcher/amatol.PNG сохранён без изменений.
 
+- CI 37430082033: Windows PASS, компиляция Wine остановилась на
+  win32u/vulkan.c:3009: SONAME_LIBVULKAN не определён при --without-vulkan.
+  Исправляется конфигурация: --with-vulkan и Homebrew molten-vk, ранняя
+  проверка определения. Добавлен ccache с сохранением даже после отказа,
+  чтобы следующие итерации не пересобирали неизменённые объекты.
+  Команда CI: brew install bison mingw-w64 pkgconf freetype gnutls molten-vk
+  ccache; затем bash tools/build_winecx.sh. Публикации ещё нет.
+
 ## Исправление отмены второй платформы — подготовка 05.10.2026
 
 - sync_companion передаёт прогресс и отмену в загрузку; extract_app проверяет

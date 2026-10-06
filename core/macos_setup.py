@@ -68,7 +68,8 @@ def wine_environment(resources, game_dir):
     for key in ('WINEARCH', 'ROSETTA_X87_PATH', 'X87_SIDECAR_PATH',
                 'WINEDLLPATH', 'WINELOADER', 'WINESERVER', 'WINEESYNC', 'WINEMSYNC',
                 'DYLD_INSERT_LIBRARIES', 'DYLD_FALLBACK_LIBRARY_PATH',
-                'CX_ROOT', 'CX_BOTTLE', 'CX_BOTTLE_PATH', 'CX_APPLEGPTK_LIBD3DSHARED_PATH'):
+                'CX_ROOT', 'CX_BOTTLE', 'CX_BOTTLE_PATH', 'CX_APPLEGPTK_LIBD3DSHARED_PATH',
+                'CX_LIBVULKAN', 'CX_ACTIVE_GRAPHICS_BACKEND', 'WINE_D3D_CONFIG'):
         env.pop(key, None)
     env['WINEPREFIX'] = str(Path(game_dir).resolve() / '.dreamworld-wine')
     external = resources / 'Wine/lib/external'

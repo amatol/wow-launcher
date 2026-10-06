@@ -5,10 +5,14 @@ test "$(uname -m)" = x86_64
 export MACOSX_DEPLOYMENT_TARGET=14.0
 export PATH="$(brew --prefix bison)/bin:$PATH"
 export PKG_CONFIG_PATH="$(brew --prefix freetype)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig"
-export CPPFLAGS="-I$(brew --prefix freetype)/include -I$(brew --prefix gnutls)/include"
-export LDFLAGS="-L$(brew --prefix freetype)/lib -L$(brew --prefix gnutls)/lib"
+export CPPFLAGS="-I$(brew --prefix freetype)/include -I$(brew --prefix gnutls)/include -I$(brew --prefix molten-vk)/include"
+export LDFLAGS="-L$(brew --prefix freetype)/lib -L$(brew --prefix gnutls)/lib -L$(brew --prefix molten-vk)/lib"
 export CFLAGS="-O2"
 export CROSSCFLAGS="-O2"
+export CC="ccache clang"
+export CXX="ccache clang++"
+export i386_CC="ccache i686-w64-mingw32-gcc"
+export x86_64_CC="ccache x86_64-w64-mingw32-gcc"
 mkdir -p build/winecx-source-tree build/winecx-objects build/winecx/ThirdParty
 python - <<'PY'
 import hashlib, json, subprocess
@@ -26,14 +30,19 @@ source_dir="$PWD/build/winecx-source-tree/sources/wine"
 runtime_dir="$PWD/build/winecx/Wine"
 (cd build/winecx-objects && "$source_dir/configure" \
   --prefix="$runtime_dir" --enable-archs=i386,x86_64 --with-mingw=yes \
-  --disable-tests --without-x --without-gstreamer --without-vulkan \
+  --disable-tests --without-x --without-gstreamer --with-vulkan \
   --without-sdl --without-cups --without-dbus --without-sane \
   --without-pcap --without-usb --without-krb5 --without-netapi \
-  --without-odbc --without-gphoto --with-freetype --with-gnutls)
+  --without-gphoto --with-opengl --with-freetype --with-gnutls)
+python - <<'PY'
+from pathlib import Path
+header = Path('build/winecx-objects/include/config.h').read_text()
+assert '#define SONAME_LIBVULKAN ' in header, 'CrossOver requires MoltenVK'
+PY
 # dlopen должен искать библиотеки в переносимом бандле, а не в Cellar CI.
 python tools/bundle_winecx_libraries.py prepare build/winecx-objects/include/config.h
-make -C build/winecx-objects -j"$(sysctl -n hw.ncpu)"
-make -C build/winecx-objects install
+make -s -C build/winecx-objects -j"$(sysctl -n hw.ncpu)"
+make -s -C build/winecx-objects install
 python tools/bundle_winecx_libraries.py bundle "$runtime_dir"
 mkdir -p "$runtime_dir/share/wine/mono"
 cp build/winecx-mono "$runtime_dir/share/wine/mono/wine-mono-10.4.1-x86.msi"

@@ -19,7 +19,7 @@ def metadata(path, url, version):
     content = path.read_bytes()
     return {'version': version, 'download_url': url, 'size': len(content),
             'sha256': hashlib.sha256(content).hexdigest(),
-            'changelog': 'macOS: WineCX на базе CrossOver, новая чистая бутылка при первом запуске. Исправлены прогресс и отмена обновления клиента.'}
+            'changelog': 'macOS: Wine из CrossOver 26.3.0, новая чистая бутылка при первом запуске. Исправлены прогресс и отмена обновления клиента.'}
 
 
 def atomic_json(path, data):

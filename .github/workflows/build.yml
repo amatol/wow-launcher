@@ -70,6 +70,11 @@ jobs:
   build-winecx:
     runs-on: macos-15-intel
     timeout-minutes: 90
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      CCACHE_DIR: ${{ github.workspace }}/.ccache-winecx
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPILERCHECK: content
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -83,11 +88,25 @@ jobs:
             build/winecx-runtime.tar.gz
             build/winecx-probe.exe
           key: winecx-26.3.0-macos15-${{ hashFiles('tools/build_winecx.sh', 'tools/bundle_winecx_libraries.py', 'tools/winecx-lock.json', 'tools/winecx_probe.c') }}
+      - name: Restore compiler cache
+        if: steps.winecx-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache-winecx
+          key: winecx-objects-26.3.0-macos15-${{ github.run_id }}
+          restore-keys: winecx-objects-26.3.0-macos15-
+      - name: Install Wine build dependencies
+        if: steps.winecx-cache.outputs.cache-hit != 'true'
+        run: brew install bison mingw-w64 pkgconf freetype gnutls molten-vk ccache
       - name: Build CrossOver 26.3 Wine from source
         if: steps.winecx-cache.outputs.cache-hit != 'true'
-        run: |
-          brew install bison mingw-w64 pkgconf freetype gnutls
-          bash tools/build_winecx.sh
+        run: bash tools/build_winecx.sh
+      - name: Save compiler cache, including failed builds
+        if: always() && steps.winecx-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache-winecx
+          key: winecx-objects-26.3.0-macos15-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
         with:
           name: WineCX-runtime

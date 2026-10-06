@@ -50,7 +50,9 @@ codesign --verify --deep --strict dist/Dreamworld.app
 file dist/Dreamworld.app/Contents/MacOS/Dreamworld
 QT_QPA_PLATFORM=offscreen dist/Dreamworld.app/Contents/MacOS/Dreamworld --smoke-test
 # Настоящий чистый префикс на Apple Silicon: Mono, native VC++ и повторный запуск.
-PYTHONPATH=. python tools/check_macos_prefix.py dist/Dreamworld.app build/winecx-probe.exe
+# Проверяем CGL отдельно под той же Rosetta, что и Wine.
+clang -arch x86_64 tools/macos_gl_probe.c -framework OpenGL -o build/macos-gl-probe
+PYTHONPATH=. python tools/check_macos_prefix.py dist/Dreamworld.app build/winecx-probe.exe build/macos-gl-probe
 (cd dist && ditto -c -k --norsrc --noextattr --keepParent Dreamworld.app Dreamworld.app.zip)
 # Проверяем именно способ распаковки, используемый самообновлением macOS.
 PYTHONPATH=. python - <<'PY'

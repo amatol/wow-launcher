@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import subprocess
+import os
 from core.macos_setup import prepare_wine_prefix, wine_environment, native_runtime_ready
 import core.macos_setup as setup
 from core.macos_prefix import RUNTIME_ID, RUNTIME_MARKER, prefix_lock
@@ -19,6 +20,9 @@ def traced_run(wine, args, *rest, **kwargs):
 setup.run_wine_setup = traced_run
 
 resources = Path(sys.argv[1]).resolve() / 'Contents/Resources'
+graphics = subprocess.run([str(Path(sys.argv[3]).resolve())], check=False)
+if graphics.returncode not in (0, 77):
+    raise RuntimeError('Независимая проверка CGL завершилась ошибкой')
 with tempfile.TemporaryDirectory(prefix='dreamworld-prefix-check-') as directory:
     env = wine_environment(resources, directory)
     prefix = Path(env['WINEPREFIX'])
@@ -31,10 +35,21 @@ with tempfile.TemporaryDirectory(prefix='dreamworld-prefix-check-') as directory
             assert (prefix / RUNTIME_MARKER).read_text().strip() == RUNTIME_ID
             assert native_runtime_ready(env['WINEPREFIX'])
             prepare_wine_prefix(resources, directory, env, log)
-            setup.run_wine_setup(resources / 'Wine/bin/wine',
-                                 [str(Path(sys.argv[2]).resolve())], env, directory, log, timeout=90)
+            probe = subprocess.run([str(resources / 'Wine/bin/wine'),
+                                    str(Path(sys.argv[2]).resolve())], env=env, cwd=directory,
+                                   stdout=log, stderr=log, timeout=90)
+            log.flush()
+            output = (Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')
+            assert '32-bit x87 OK' in output, '32-bit x87 probe failed'
+            if probe.returncode:
+                if not (os.environ.get('GITHUB_ACTIONS') == 'true' and
+                        graphics.returncode == 77 and probe.returncode == 12):
+                    raise RuntimeError(f'Direct3D probe failed: {probe.returncode}')
+                print('::warning::D3D9 NOT VERIFIED: native macOS CGL has no accelerated renderer on this CI host', flush=True)
+            else:
+                print('WineCX Direct3D 9 device + Present PASS', flush=True)
         print((Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')[-6000:])
-        print('WineCX prefix: migration + Mono + native VC++ + x87 + D3D9 OK', flush=True)
+        print('WineCX prefix: migration + Mono + native VC++ + x87 OK', flush=True)
     except Exception:
         print((Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')[-16000:])
         for path in (Path(env['WINEPREFIX'])).glob('vc-redist-*.log'):

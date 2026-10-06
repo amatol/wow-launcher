@@ -32,6 +32,11 @@
   Команда CI: brew install bison mingw-w64 pkgconf freetype gnutls molten-vk
   ccache; затем bash tools/build_winecx.sh. Публикации ещё нет.
 
+- CI 37433688204 остановился до компиляции: явный --with-opengl требует
+  EGL. На macOS winemac.drv использует системный CGL/OpenGL напрямую;
+  лишний флаг убран, стандартное автоопределение OpenGL сохранено.
+  vulkan.o и winemac.drv/opengl.o проверяются до полной сборки.
+
 ## Исправление отмены второй платформы — подготовка 05.10.2026
 
 - sync_companion передаёт прогресс и отмену в загрузку; extract_app проверяет

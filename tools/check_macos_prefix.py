@@ -40,6 +40,7 @@ with tempfile.TemporaryDirectory(prefix='dreamworld-prefix-check-') as directory
                                    stdout=log, stderr=log, timeout=90)
             log.flush()
             output = (Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')
+            assert '32-bit ARPL OK' in output, '32-bit ARPL probe failed'
             assert '32-bit x87 OK' in output, '32-bit x87 probe failed'
             if probe.returncode:
                 if not (os.environ.get('GITHUB_ACTIONS') == 'true' and

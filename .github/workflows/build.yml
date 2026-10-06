@@ -87,7 +87,7 @@ jobs:
           path: |
             build/winecx-runtime.tar.gz
             build/winecx-probe.exe
-          key: winecx-26.3.0-macos15-${{ hashFiles('tools/build_winecx.sh', 'tools/bundle_winecx_libraries.py', 'tools/winecx-lock.json', 'tools/winecx_probe.c') }}
+          key: winecx-26.3.0-macos15-${{ hashFiles('tools/build_winecx.sh', 'tools/bundle_winecx_libraries.py', 'tools/winecx-lock.json', 'tools/winecx_probe.c', 'tools/patches/*.patch') }}
       - name: Restore compiler cache
         if: steps.winecx-cache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4

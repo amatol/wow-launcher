@@ -13,3 +13,7 @@ No CrossOver GUI, Sikarugir, D3DMetal, MTLD3D or RosettaX87 is bundled.
 Dependencies are built by Homebrew; exact installed versions and upstream
 source URLs are recorded in homebrew-dependencies.json. Their installed
 license/copyright notices accompany this file in dependencies/.
+
+Local patch: winecx-arpl.patch (included alongside this file).
+Emulates unprefixed register ARPL on macOS 32-bit illegal-instruction faults.
+Prefix generation remains v1; this patch does not require resetting the bottle.

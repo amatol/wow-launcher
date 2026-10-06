@@ -1,0 +1,67 @@
+--- a/dlls/ntdll/unix/signal_x86_64.c
++++ b/dlls/ntdll/unix/signal_x86_64.c
+@@ -1999,6 +1999,56 @@
+ }
+ 
+ /***********************************************************************
++ *           emulate_arpl_register
++ *
++ * Rosetta can fault on the 32-bit ARPL used by WoW's Warden module.
++ * Only decode the unprefixed register form; leave other faults to Wine.
++ * In 64-bit mode opcode 63 is MOVSXD and must not be handled here.
++ */
++static inline BOOL emulate_arpl_register( ucontext_t *sigcontext, CONTEXT *context )
++{
++    BYTE instr[2];
++    unsigned int src, dst, rpl;
++    ULONGLONG regs[8];
++
++    if (context->SegCs != cs32_sel) return FALSE;
++    if (virtual_uninterrupted_read_memory( (BYTE *)context->Rip, instr, sizeof(instr) ) != sizeof(instr))
++        return FALSE;
++    if (instr[0] != 0x63 || (instr[1] & 0xc0) != 0xc0) return FALSE;
++
++    regs[0] = RAX_sig(sigcontext);
++    regs[1] = RCX_sig(sigcontext);
++    regs[2] = RDX_sig(sigcontext);
++    regs[3] = RBX_sig(sigcontext);
++    regs[4] = RSP_sig(sigcontext);
++    regs[5] = RBP_sig(sigcontext);
++    regs[6] = RSI_sig(sigcontext);
++    regs[7] = RDI_sig(sigcontext);
++    src = (instr[1] >> 3) & 7;
++    dst = instr[1] & 7;
++    rpl = regs[src] & 3;
++    if ((regs[dst] & 3) < rpl)
++    {
++        regs[dst] = (regs[dst] & ~3ULL) | rpl;
++        EFL_sig(sigcontext) |= 0x40;
++        switch (dst)
++        {
++        case 0: RAX_sig(sigcontext) = regs[dst]; break;
++        case 1: RCX_sig(sigcontext) = regs[dst]; break;
++        case 2: RDX_sig(sigcontext) = regs[dst]; break;
++        case 3: RBX_sig(sigcontext) = regs[dst]; break;
++        case 4: RSP_sig(sigcontext) = regs[dst]; break;
++        case 5: RBP_sig(sigcontext) = regs[dst]; break;
++        case 6: RSI_sig(sigcontext) = regs[dst]; break;
++        case 7: RDI_sig(sigcontext) = regs[dst]; break;
++        }
++    }
++    else EFL_sig(sigcontext) &= ~0x40;
++    RIP_sig(sigcontext) += 2;
++    return TRUE;
++}
++
++/***********************************************************************
+  *           emulate_xgetbv
+  *
+  * Check if the fault location is an Intel XGETBV instruction for xcr0 and
+@@ -2514,6 +2564,7 @@
+         break;
+     case TRAP_x86_PRIVINFLT:   /* Invalid opcode exception */
+ #ifdef __APPLE__
++        if (emulate_arpl_register( ucontext, &context.c )) return;
+         /* CW HACK 20186 */
+         if (handle_cet_nop( ucontext, &context.c )) return;
+         /* CW HACK 23427 */

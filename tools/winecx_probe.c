@@ -5,8 +5,37 @@
 #include <stdio.h>
 #include <math.h>
 
+/* Все сочетания RPL и оба исходных значения ZF. Проверяем остальные
+ * арифметические флаги, старшие биты EAX и неизменность EDX. */
+static int check_arpl(void)
+{
+    unsigned int dst, src, zf;
+    for (dst = 0; dst < 4; ++dst)
+    for (src = 0; src < 4; ++src)
+    for (zf = 0; zf < 2; ++zf)
+    {
+        unsigned int a = 0x878a62a8 | dst, d = 0x1054dd04 | src;
+        unsigned int before = 0xA97 | (zf << 6), after;
+        unsigned int expected = (a & ~3u) | (dst < src ? src : dst);
+        __asm__ volatile ("pushl %[flags]\n\tpopfl\n\t.byte 0x63, 0xd0\n\tpushfl\n\tpopl %[after]"
+                          : "+a"(a), "+d"(d), [after] "=r"(after)
+                          : [flags] "r"(before) : "cc", "memory");
+        if (a != expected || d != (0x1054dd04 | src) ||
+            (after & 0x8d5) != ((before & 0x895) | (dst < src ? 0x40 : 0)))
+        {
+            printf("ARPL failed dst=%u src=%u zf=%u eax=%08x edx=%08x flags=%08x\n",
+                   dst, src, zf, a, d, after);
+            return 16;
+        }
+    }
+    printf("32-bit ARPL OK (32 cases, including crash registers)\n");
+    fflush(stdout);
+    return 0;
+}
+
 int main(void)
 {
+    if (check_arpl()) return 16;
     volatile double a = 1.25, b = 2.5;
     volatile double result = a * b + a;
     if (fabs(result - 4.375) > 0.000001) return 10;

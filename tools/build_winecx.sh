@@ -1,6 +1,7 @@
 #!/bin/bash
 # Сборка открытого Wine из официального CrossOver на Intel macOS runner.
 set -euo pipefail
+python tools/test_winecx_arpl.py
 test "$(uname -m)" = x86_64
 export MACOSX_DEPLOYMENT_TARGET=14.0
 export PATH="$(brew --prefix bison)/bin:$PATH"
@@ -27,6 +28,7 @@ for key in ('source', 'mono'):
 PY
 tar -xf build/winecx-source -C build/winecx-source-tree sources/wine
 source_dir="$PWD/build/winecx-source-tree/sources/wine"
+patch --batch --fuzz=0 -d "$source_dir" -p1 < tools/patches/winecx-arpl.patch
 runtime_dir="$PWD/build/winecx/Wine"
 (cd build/winecx-objects && "$source_dir/configure" \
   --prefix="$runtime_dir" --enable-archs=i386,x86_64 --with-mingw=yes \
@@ -49,7 +51,7 @@ python tools/bundle_winecx_libraries.py bundle "$runtime_dir"
 mkdir -p "$runtime_dir/share/wine/mono"
 cp build/winecx-mono "$runtime_dir/share/wine/mono/wine-mono-10.4.1-x86.msi"
 cp "$source_dir/COPYING.LIB" build/winecx/ThirdParty/Wine-COPYING.LIB
-cp tools/winecx-lock.json tools/winecx-SOURCES.txt build/winecx/ThirdParty/
+cp tools/winecx-lock.json tools/winecx-SOURCES.txt tools/patches/winecx-arpl.patch build/winecx/ThirdParty/
 brew info --json=v2 --installed > build/winecx/ThirdParty/homebrew-dependencies.json
 python - <<'PY'
 import json

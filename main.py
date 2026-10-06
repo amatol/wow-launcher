@@ -38,8 +38,9 @@ def main():
         if bundle and sys.platform == "darwin":
             resources = os.path.join(bundle, "Contents", "Resources")
             assert Config.GAME_DIR == os.path.dirname(bundle)
-            env = os.environ.copy()
-            env["DYLD_LIBRARY_PATH"] = os.path.join(resources, "Wine", "lib", "external")
+            from pathlib import Path
+            from core.macos_setup import wine_environment
+            env = wine_environment(Path(resources), Config.GAME_DIR)
             subprocess.run([os.path.join(resources, "Wine", "bin", "wine"), "--version"],
                            env=env, check=True, timeout=30)
         print("Dreamworld smoke test OK", Config.LAUNCHER_VERSION, flush=True)

@@ -64,7 +64,7 @@ class Config:
 
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
-    LAUNCHER_VERSION = "20261005"
+    LAUNCHER_VERSION = "20261006"
 
     # URL манифеста обновлений лаунчера (JSON)
     LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/" + ("launcher_manifest_macos.json" if sys.platform == "darwin" else "launcher_manifest.json")

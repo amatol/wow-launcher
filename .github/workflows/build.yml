@@ -67,7 +67,42 @@ jobs:
               });
             }
 
+  build-winecx:
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Cache compiled CrossOver Wine
+        id: winecx-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/winecx-runtime.tar.gz
+            build/winecx-probe.exe
+          key: winecx-26.3.0-macos15-${{ hashFiles('tools/build_winecx.sh', 'tools/bundle_winecx_libraries.py', 'tools/winecx-lock.json', 'tools/winecx_probe.c') }}
+      - name: Build CrossOver 26.3 Wine from source
+        if: steps.winecx-cache.outputs.cache-hit != 'true'
+        run: |
+          brew install bison mingw-w64 pkgconf freetype gnutls
+          bash tools/build_winecx.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WineCX-runtime
+          path: |
+            build/winecx-runtime.tar.gz
+            build/winecx-probe.exe
+      - name: Preserve build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: WineCX-build-diagnostics
+          path: build/winecx-objects/config.log
+
   build-macos:
+    needs: build-winecx
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -76,6 +111,14 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: python -m pip install -r requirements.txt pyinstaller
+      - uses: actions/download-artifact@v4
+        with:
+          name: WineCX-runtime
+          path: build
+      - name: Unpack CrossOver Wine runtime
+        run: |
+          mkdir -p build/winecx
+          tar -xf build/winecx-runtime.tar.gz -C build/winecx
       - name: Run tests
         env:
           QT_QPA_PLATFORM: offscreen

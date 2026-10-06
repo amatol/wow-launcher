@@ -34,7 +34,7 @@ class MacLauncherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle = root / 'Dreamworld.app'
-            for name in ('Wine/bin/wine', 'Patching/rosettax87/rosettax87'):
+            for name in ('Wine/bin/wine', 'Wine/bin/wineserver'):
                 path = bundle / 'Contents/Resources' / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
@@ -44,12 +44,13 @@ class MacLauncherTests(unittest.TestCase):
             wow.touch()
             process = Mock()
             process.wait.side_effect = subprocess.TimeoutExpired('wine', 2)
-            with patch('core.macos.app_bundle_path', return_value=str(bundle)), patch('core.macos.prepare_wine_prefix'), patch('core.macos.subprocess.Popen', return_value=process) as launch, patch.dict(os.environ, {'WINEPREFIX': '/wrong', 'WINEARCH': 'win32'}):
+            with patch('core.macos.app_bundle_path', return_value=str(bundle)), patch('core.macos.prefix_lock'), patch('core.macos.prepare_wine_prefix'), patch('core.macos.subprocess.Popen', return_value=process) as launch, patch.dict(os.environ, {'WINEPREFIX': '/wrong', 'WINEARCH': 'win32', 'ROSETTA_X87_PATH': '/old'}):
                 launch_wow_macos(wow, str(game))
             args, kwargs = launch.call_args
             self.assertEqual(args[0][1], str(wow.resolve()))
             self.assertEqual(kwargs['env']['WINEPREFIX'], str(game.resolve() / '.dreamworld-wine'))
             self.assertNotIn('WINEARCH', kwargs['env'])
+            self.assertNotIn('ROSETTA_X87_PATH', kwargs['env'])
             self.assertEqual(kwargs['cwd'], str(game))
 
     def test_install_preserves_executable_and_prefix_and_windows_launcher(self):

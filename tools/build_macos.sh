@@ -1,39 +1,17 @@
 #!/bin/bash
 # Воспроизводимая тестовая сборка с встроенным Wine; выполнять на Apple Silicon.
 set -euo pipefail
-upstream_revision=2d383ffa0e01faa4a768c2bacb2c635c6c0c2e0e
 mkdir -p build
-if [ ! -d build/wowsilicon ]; then
-    git clone https://github.com/WoWSilicon/WoWSilicon.git build/wowsilicon
-fi
-git -C build/wowsilicon checkout "$upstream_revision"
-if [ ! -d build/wine-runtime ]; then
-    build/wowsilicon/tools/wine-runtime/restore.sh --repository WoWSilicon/WoWSilicon --runtime "$PWD/build/wine-runtime"
-fi
-build/wowsilicon/tools/wine-runtime/validate.sh --runtime "$PWD/build/wine-runtime"
+# WineCX и его зависимости закреплены URL и SHA-256 в одном lock-файле.
+test -f build/winecx/Wine/dreamworld-runtime-id
 python - <<'PY'
 from PIL import Image
 Image.open('assets/launcher_icon.png').save('build/dreamworld.icns', format='ICNS')
 PY
 pyinstaller Dreamworld-macos.spec --noconfirm
 resources=dist/Dreamworld.app/Contents/Resources
-cp -R build/wine-runtime "$resources/Wine"
-# Версия и SHA-256 из appwiz.cpl закреплённого Wine 11.13.
-mkdir -p "$resources/Wine/share/wine/mono"
-curl --fail --location --retry 3 --connect-timeout 30 --max-time 180 \
-  https://github.com/wine-mono/wine-mono/releases/download/wine-mono-11.2.0/wine-mono-11.2.0-x86.msi \
-  -o "$resources/Wine/share/wine/mono/wine-mono-11.2.0-x86.msi"
-MONO_FILE="$resources/Wine/share/wine/mono/wine-mono-11.2.0-x86.msi" python - <<'MONO'
-import hashlib, os
-from pathlib import Path
-assert hashlib.sha256(Path(os.environ['MONO_FILE']).read_bytes()).hexdigest() == 'b4525679e7da30d4658ceb85739cbc55c771791054abbb4b3152fe96ded0b897'
-MONO
-mkdir -p "$resources/Patching"
-cp -R build/wowsilicon/Sources/WoWSiliconSwift/Resources/Patching/rosettax87 "$resources/Patching/"
-mkdir -p "$resources/ThirdParty"
-cp build/wowsilicon/LICENSE "$resources/ThirdParty/WoWSilicon-LICENSE"
-cp build/wowsilicon/Packaging/WineRuntime/*json "$resources/ThirdParty/"
-printf '%s\n' "WoWSilicon https://github.com/WoWSilicon/WoWSilicon revision $upstream_revision" > "$resources/ThirdParty/SOURCES.txt"
+cp -R build/winecx/Wine "$resources/Wine"
+cp -R build/winecx/ThirdParty "$resources/ThirdParty"
 # Внешние библиотеки Wine без symlink: Windows установит .app без привилегий.
 # Qt остаётся внутри one-file EXE и распаковывается самим PyInstaller на Mac.
 python - <<'PYCODE'
@@ -58,7 +36,7 @@ codesign --verify --deep --strict dist/Dreamworld.app
 file dist/Dreamworld.app/Contents/MacOS/Dreamworld
 QT_QPA_PLATFORM=offscreen dist/Dreamworld.app/Contents/MacOS/Dreamworld --smoke-test
 # Настоящий чистый префикс на Apple Silicon: Mono, native VC++ и повторный запуск.
-PYTHONPATH=. python tools/check_macos_prefix.py dist/Dreamworld.app
+PYTHONPATH=. python tools/check_macos_prefix.py dist/Dreamworld.app build/winecx-probe.exe
 (cd dist && ditto -c -k --norsrc --noextattr --keepParent Dreamworld.app Dreamworld.app.zip)
 # Проверяем именно способ распаковки, используемый самообновлением macOS.
 PYTHONPATH=. python - <<'PY'

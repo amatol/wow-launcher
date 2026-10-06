@@ -11,6 +11,7 @@ import time
 import urllib.request
 
 import certifi
+from core.macos_prefix import ensure_runtime_prefix
 
 
 DEFAULT_SETTINGS = {'gxResolution': '1280x800', 'gxWindow': '1', 'gxMaximize': '0'}
@@ -64,14 +65,18 @@ def prepare_game_config(game_dir):
 
 def wine_environment(resources, game_dir):
     env = os.environ.copy()
-    env.pop('WINEARCH', None)
-    env.pop('X87_SIDECAR_PATH', None)
+    for key in ('WINEARCH', 'ROSETTA_X87_PATH', 'X87_SIDECAR_PATH',
+                'WINEDLLPATH', 'WINELOADER', 'WINESERVER', 'WINEESYNC', 'WINEMSYNC',
+                'DYLD_INSERT_LIBRARIES', 'DYLD_FALLBACK_LIBRARY_PATH',
+                'CX_ROOT', 'CX_BOTTLE', 'CX_BOTTLE_PATH', 'CX_APPLEGPTK_LIBD3DSHARED_PATH'):
+        env.pop(key, None)
     env['WINEPREFIX'] = str(Path(game_dir).resolve() / '.dreamworld-wine')
-    env['ROSETTA_X87_PATH'] = str(resources / 'Patching/rosettax87/rosettax87')
-    env['DYLD_LIBRARY_PATH'] = str(resources / 'Wine/lib/external')
+    external = resources / 'Wine/lib/external'
+    env['DYLD_LIBRARY_PATH'] = str(external)
+    env['PATH'] = str(resources / 'Wine/bin') + os.pathsep + env.get('PATH', '/usr/bin:/bin')
     env['WINEDATADIR'] = str(resources / 'Wine/share/wine')
     env['WINE_LARGE_ADDRESS_AWARE'] = '1'
-    env['WINEDEBUG'] = '-all'
+    env['WINEDEBUG'] = '-all,err+all'
     env['WINEDLLOVERRIDES'] = 'd3d9=b;' + VC_OVERRIDES
     return env
 
@@ -149,16 +154,16 @@ def restore_missing_builtins(moved):
 
 def prepare_wine_prefix(resources, game_dir, env, log):
     """Установить VC++ один раз; повторить проверку DLL при каждом запуске."""
+    ensure_runtime_prefix(resources, game_dir, env, log)
     prefix = Path(env['WINEPREFIX'])
     marker = prefix / '.dreamworld-vcredist-v1'
-    mono = resources / 'Wine/share/wine/mono/wine-mono-11.2.0-x86.msi'
+    mono = resources / 'Wine/share/wine/mono/wine-mono-10.4.1-x86.msi'
     mono_dir = prefix / 'drive_c/windows/mono/mono-2.0'
     if marker.is_file() and native_runtime_ready(prefix) and mono_dir.is_dir():
         return
     wine = resources / 'Wine/bin/wine'
     install_env = env.copy()
-    # x87-перехватчик нужен игре, но не служебным программам Wine и MSI.
-    # Upstream DependencyService тоже запускает установщики без него.
+    # Не наследовать перехватчик прежнего Wine и в служебных процессах.
     install_env.pop('ROSETTA_X87_PATH', None)
     install_env['__COMPAT_LAYER'] = 'RunAsInvoker'
     install_env['WINEDLLOVERRIDES'] = 'd3d9=b;' + VC_OVERRIDES + ';winemenubuilder.exe,mscoree,mshtml=d'

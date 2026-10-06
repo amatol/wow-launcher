@@ -8,6 +8,11 @@ from core.macos_setup import prepare_game_config, native_runtime_ready, runtime_
 
 
 class MacSetupTests(unittest.TestCase):
+    def setUp(self):
+        migration = patch('core.macos_setup.ensure_runtime_prefix')
+        migration.start()
+        self.addCleanup(migration.stop)
+
     def test_preserves_non_utf8_crlf_and_existing_values_and_backup(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / 'WTF/Config.wtf'
@@ -74,10 +79,15 @@ class MacSetupTests(unittest.TestCase):
 
 
 class PrefixFailureTests(unittest.TestCase):
+    def setUp(self):
+        migration = patch('core.macos_setup.ensure_runtime_prefix')
+        migration.start()
+        self.addCleanup(migration.stop)
+
     def test_checksum_failure_never_runs_vc_installer_or_marks_ready(self):
         with tempfile.TemporaryDirectory() as directory:
             resources = Path(directory) / 'resources'
-            mono = resources / 'Wine/share/wine/mono/wine-mono-11.2.0-x86.msi'
+            mono = resources / 'Wine/share/wine/mono/wine-mono-10.4.1-x86.msi'
             mono.parent.mkdir(parents=True)
             mono.touch()
             prefix = Path(directory) / '.dreamworld-wine'
@@ -92,7 +102,7 @@ class PrefixFailureTests(unittest.TestCase):
     def test_failed_installer_can_be_retried_and_only_success_marks_ready(self):
         with tempfile.TemporaryDirectory() as directory:
             resources = Path(directory) / 'resources'
-            mono = resources / 'Wine/share/wine/mono/wine-mono-11.2.0-x86.msi'
+            mono = resources / 'Wine/share/wine/mono/wine-mono-10.4.1-x86.msi'
             mono.parent.mkdir(parents=True)
             mono.touch()
             prefix = Path(directory) / '.dreamworld-wine'

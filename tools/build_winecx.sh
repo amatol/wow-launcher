@@ -1,0 +1,50 @@
+#!/bin/bash
+# Сборка открытого Wine из официального CrossOver на Intel macOS runner.
+set -euo pipefail
+test "$(uname -m)" = x86_64
+export MACOSX_DEPLOYMENT_TARGET=14.0
+export PATH="$(brew --prefix bison)/bin:$PATH"
+export PKG_CONFIG_PATH="$(brew --prefix freetype)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig"
+export CPPFLAGS="-I$(brew --prefix freetype)/include -I$(brew --prefix gnutls)/include"
+export LDFLAGS="-L$(brew --prefix freetype)/lib -L$(brew --prefix gnutls)/lib"
+export CFLAGS="-O2"
+export CROSSCFLAGS="-O2"
+mkdir -p build/winecx-source-tree build/winecx-objects build/winecx/ThirdParty
+python - <<'PY'
+import hashlib, json, subprocess
+from pathlib import Path
+lock = json.loads(Path('tools/winecx-lock.json').read_text())
+for key in ('source', 'mono'):
+    entry = lock[key]
+    path = Path('build') / ('winecx-' + key)
+    subprocess.run(['curl', '-fL', '--retry', '3', '--max-time', '180', entry['url'], '-o', str(path)], check=True)
+    if hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
+        raise RuntimeError('SHA-256: ' + key)
+PY
+tar -xf build/winecx-source -C build/winecx-source-tree sources/wine
+source_dir="$PWD/build/winecx-source-tree/sources/wine"
+runtime_dir="$PWD/build/winecx/Wine"
+(cd build/winecx-objects && "$source_dir/configure" \
+  --prefix="$runtime_dir" --enable-archs=i386,x86_64 --with-mingw=yes \
+  --disable-tests --without-x --without-gstreamer --without-vulkan \
+  --without-sdl --without-cups --without-dbus --without-sane \
+  --without-pcap --without-usb --without-krb5 --without-netapi \
+  --without-odbc --without-gphoto --with-freetype --with-gnutls)
+# dlopen должен искать библиотеки в переносимом бандле, а не в Cellar CI.
+python tools/bundle_winecx_libraries.py prepare build/winecx-objects/include/config.h
+make -C build/winecx-objects -j"$(sysctl -n hw.ncpu)"
+make -C build/winecx-objects install
+python tools/bundle_winecx_libraries.py bundle "$runtime_dir"
+mkdir -p "$runtime_dir/share/wine/mono"
+cp build/winecx-mono "$runtime_dir/share/wine/mono/wine-mono-10.4.1-x86.msi"
+cp "$source_dir/COPYING.LIB" build/winecx/ThirdParty/Wine-COPYING.LIB
+cp tools/winecx-lock.json tools/winecx-SOURCES.txt build/winecx/ThirdParty/
+brew info --json=v2 --installed > build/winecx/ThirdParty/homebrew-dependencies.json
+python - <<'PY'
+import json
+from pathlib import Path
+lock = json.loads(Path('tools/winecx-lock.json').read_text())
+Path('build/winecx/Wine/dreamworld-runtime-id').write_text(lock['runtime_id'] + '\n')
+PY
+i686-w64-mingw32-gcc -O2 -mfpmath=387 tools/winecx_probe.c -o build/winecx-probe.exe -ld3d9 -lgdi32
+tar -czf build/winecx-runtime.tar.gz -C build/winecx Wine ThirdParty

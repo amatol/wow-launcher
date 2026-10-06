@@ -1,0 +1,15 @@
+Dreamworld macOS: Wine built from the official CrossOver 26.3.0 FOSS archive.
+Wine base version: 11.0. Wine is licensed under LGPL-2.1+ (Wine-COPYING.LIB).
+This is the open-source Wine component, not the commercial CrossOver application.
+
+Source: https://media.codeweavers.com/pub/crossover/source/crossover-sources-26.3.0.tar.gz
+Exact source and Wine Mono URLs and SHA-256: winecx-lock.json.
+Wine Mono 10.4.1: https://github.com/wine-mono/wine-mono/tree/wine-mono-10.4.1
+Build recipe: tools/build_winecx.sh and tools/bundle_winecx_libraries.py.
+Build architecture: x86_64 Unix + i386/x86_64 PE (new WoW64), runs via Rosetta 2.
+Rendering: built-in Direct3D 9 / WineD3D / OpenGL.
+No CrossOver GUI, Sikarugir, D3DMetal, MTLD3D or RosettaX87 is bundled.
+
+Dependencies are built by Homebrew; exact installed versions and upstream
+source URLs are recorded in homebrew-dependencies.json. Their installed
+license/copyright notices accompany this file in dependencies/.

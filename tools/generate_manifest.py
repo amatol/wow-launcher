@@ -13,7 +13,7 @@ EXCLUDED_PARTS = {".launcher_tmp", ".git", "Dreamworld.app", "Dreamworld.app.old
 # DragonUI устанавливается по выбору игрока через каталог аддонов.
 OPTIONAL_ADDON_FOLDERS = {"DragonUI", "DragonUI_Options"}
 
-EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe", "Dreamworld.app.zip", "Repair.log", ".dreamworld-wine.log", ".dreamworld-launchers.json"}
+EXCLUDED_NAMES = {".launcher_version", "Dreamworld.exe", "Dreamworld.app.zip", "Repair.log", ".dreamworld-wine.log", ".dreamworld-wine.lock", ".dreamworld-launchers.json"}
 
 
 def sha256(path: Path) -> str:

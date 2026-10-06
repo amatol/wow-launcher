@@ -6,6 +6,7 @@ import tempfile
 import subprocess
 from core.macos_setup import prepare_wine_prefix, wine_environment, native_runtime_ready
 import core.macos_setup as setup
+from core.macos_prefix import RUNTIME_ID, RUNTIME_MARKER, prefix_lock
 
 original_run = setup.run_wine_setup
 
@@ -20,12 +21,20 @@ setup.run_wine_setup = traced_run
 resources = Path(sys.argv[1]).resolve() / 'Contents/Resources'
 with tempfile.TemporaryDirectory(prefix='dreamworld-prefix-check-') as directory:
     env = wine_environment(resources, directory)
+    prefix = Path(env['WINEPREFIX'])
+    prefix.mkdir()
+    (prefix / 'old-runtime-sentinel').write_text('old Wine')
     try:
-        with open(Path(directory) / '.dreamworld-wine.log', 'ab') as log:
+        with prefix_lock(directory), open(Path(directory) / '.dreamworld-wine.log', 'ab') as log:
             prepare_wine_prefix(resources, directory, env, log)
+            assert not (prefix / 'old-runtime-sentinel').exists()
+            assert (prefix / RUNTIME_MARKER).read_text().strip() == RUNTIME_ID
             assert native_runtime_ready(env['WINEPREFIX'])
             prepare_wine_prefix(resources, directory, env, log)
-        print('Wine prefix: Mono + native VC++ x86/x64 OK', flush=True)
+            setup.run_wine_setup(resources / 'Wine/bin/wine',
+                                 [str(Path(sys.argv[2]).resolve())], env, directory, log, timeout=90)
+        print((Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')[-6000:])
+        print('WineCX prefix: migration + Mono + native VC++ + x87 + D3D9 OK', flush=True)
     except Exception:
         print((Path(directory) / '.dreamworld-wine.log').read_text(errors='replace')[-16000:])
         for path in (Path(env['WINEPREFIX'])).glob('vc-redist-*.log'):

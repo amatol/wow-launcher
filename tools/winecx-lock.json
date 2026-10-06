@@ -1,0 +1,11 @@
+{
+  "runtime_id": "winecx-26.3.0-v1",
+  "source": {
+    "url": "https://media.codeweavers.com/pub/crossover/source/crossover-sources-26.3.0.tar.gz",
+    "sha256": "ac99c8ca4b3848f3e81784135f023df266b61c2345726ea55a50b3e030dd6872"
+  },
+  "mono": {
+    "url": "https://github.com/wine-mono/wine-mono/releases/download/wine-mono-10.4.1/wine-mono-10.4.1-x86.msi",
+    "sha256": "071f4b2887e1c97a11d791ff3d65be9429eed6dec4c2708888bfd546ba358e23"
+  }
+}

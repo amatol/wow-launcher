@@ -2,6 +2,47 @@
 
 Последнее обновление: 2026-10-07
 
+## Тестовая macOS-сборка с corefonts готова — 07.10.2026
+
+- Запрос пользователя выполнен: при запуске игры лаунчер автоматически
+  устанавливает Microsoft corefonts через встроенные закреплённые Winetricks
+  и cabextract. Работает с существующей бутылкой; все 30 TTF проверяются,
+  повреждение вызывает повтор установки. Tahoma/Tahoma Bold уже были в Wine.
+  Кодировки/локали не изменены; исправление ввода имени пока не подтверждено.
+- Чат AnyModel и игровые службы в ходе этой работы не менялись.
+  Лаунчер main/c148c193c2647d1a5d67158f3dd4b6a528d303e5, изменения
+  предустановки b67080b, коррекция POSIX-теста c148c19, оба отправлены в origin.
+  Пользовательский amatol.PNG не тронут.
+- CI 37677761142: обе платформы успешны, 92 теста. На настоящем macOS runner
+  проверены чистая бутылка, Mono/VC++, установка всех 30 corefonts, запись
+  Arial в реестре, повторный запуск и восстановление удалённого Arial;
+  codesign и roundtrip ZIP PASS, ARPL/x87 PASS. Direct3D на headless CI
+  не проверен (у CGL отсутствует accelerated renderer), как в прежней сборке.
+- cabextract 1.11 собран локально из закреплённого архива; Microsoft-архивы
+  проверены по SHA-256 и распакованы, в Arial/Verdana/Times/Courier найдены
+  все 66 русских букв. Пробная cabarchive удалена из venv; временный fontTools
+  используется только в /tmp/dreamworld-fontcheck, runtime-зависимости прежние.
+- Тестовый бандл опубликован отдельно, без замены действующего выпуска:
+  https://wotlk.amatol.blog/launcher/tests/Dreamworld-corefonts-20261007.app.zip
+  Путь /srv/dreamworld-launcher/tests/Dreamworld-corefonts-20261007.app.zip,
+  размер 283833091 байт, SHA-256 d1d43e0d68646086820a2266456394e0c6a827ec6cfe3d7107425b23b76edbcd.
+  ZIP проверен, cabextract arm64 с зависимостями только /usr/lib; Winetricks
+  совпал с lock SHA-256. Полное скачивание по HTTPS подтвердило размер/хеш.
+  Основные манифесты проверены по SHA-256 и не менялись.
+- Выполнено из /root/launcher: .venv/bin/python tools/build_font_tools.py,
+  QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -q,
+  git push; gh run download 37677761142 -n Dreamworld-macos
+  -D dist/corefonts-test-20261007. Тестовый ZIP установлен в tests атомарно
+  os.replace с правами 0644. Серверные службы не перезапускались.
+- Полноценный второй выпуск за 20261007 блокируется штатным
+  tools/publish_launchers.py, поэтому основной выпуск 20261007 и клиентская
+  установка /opt/azerothcore/client не заменялись. RUNTIME_ID сохранён:
+  winecx-26.3.0-v1. Для теста игроку закрыть WoW/лаунчер, сохранить прежний
+  Dreamworld.app вне папки клиента, распаковать тестовый Dreamworld.app рядом
+  с Wow.exe и запустить игру. .dreamworld-wine не удалять; первый запуск
+  требует интернета и может занять несколько минут. Далее проверить имя.
+
+
 ## Предустановка corefonts для проверки кириллицы — 07.10.2026
 
 - По запросу пользователя добавлена автоматическая установка Microsoft

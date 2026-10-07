@@ -51,7 +51,9 @@ make -s -C build/winecx-objects dlls/win32u/vulkan.o dlls/winemac.drv/opengl.o
 make -s -C build/winecx-objects -j"$(sysctl -n hw.ncpu)"
 make -s -C build/winecx-objects install
 python tools/bundle_winecx_libraries.py bundle "$runtime_dir"
-lipo -verify_arch x86_64 "$runtime_dir/bin/wine" "$runtime_dir/bin/wineserver"
+for binary in wine wineserver; do
+    lipo "$runtime_dir/bin/$binary" -verify_arch x86_64
+done
 mkdir -p "$runtime_dir/share/wine/mono"
 cp build/winecx-mono "$runtime_dir/share/wine/mono/wine-mono-10.4.1-x86.msi"
 cp "$source_dir/COPYING.LIB" build/winecx/ThirdParty/Wine-COPYING.LIB

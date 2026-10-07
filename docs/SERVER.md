@@ -183,8 +183,13 @@ Apple Silicon, macOS 15.0+ с Rosetta 2. Тестовая версия испо�
 Это открытый движок без коммерческой оболочки CrossOver. Исходный архив
 и Wine Mono 10.4.1 закреплены URL/SHA-256 в tools/winecx-lock.json.
 
-Wine собирается tools/build_winecx.sh на Intel macOS, с Unix x86_64 и
-PE i386/x86_64 (новый WoW64). Внешние библиотеки включаются в бандл;
+CI содержит две независимые задачи: Windows на `windows-latest` и macOS
+на `macos-latest` (Apple Silicon). В задаче macOS сначала собирается Wine
+через Rosetta с отдельным Homebrew x86_64 в `/usr/local`, затем нативный
+лаунчер arm64. tools/install_winecx_dependencies.sh устанавливает только
+сборочные зависимости на временной машине CI. Wine собирается
+tools/build_winecx.sh с Unix x86_64 и PE i386/x86_64 (новый WoW64).
+Внешние библиотеки включаются в бандл;
 Homebrew на Mac игрока не нужен. Состав зависимостей, лицензии и ссылки
 на исходники находятся в Contents/Resources/ThirdParty.
 Графика: встроенный Direct3D 9 через WineD3D/OpenGL; MTLD3D и RosettaX87

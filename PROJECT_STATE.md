@@ -3,6 +3,27 @@
 Последнее обновление: 2026-10-07
 
 
+## CI на windows-latest и macos-latest — 07.10.2026
+
+- По запросу пользователя удалена отдельная задача build-winecx на
+  macos-15-intel. Остались две независимые задачи: Windows release на
+  windows-latest и macOS release на macos-latest (Apple Silicon).
+- В macOS-задаче сначала собирается Wine x86_64 через Rosetta, затем
+  нативный лаунчер arm64. Добавлен tools/install_winecx_dependencies.sh:
+  отдельный Homebrew /usr/local, установщик Homebrew закреплён на
+  0f5b7666a65fc2d1a2615549f02771353c250f9a (как в runner-images).
+  Нативный Homebrew и Python/Qt лаунчера остаются arm64.
+- Сборка Wine явно задаёт clang -arch x86_64 и проверяет архитектуру
+  wine/wineserver через lipo. Ключи кэша разделены по ОС, архитектуре и
+  основной версии macOS; старый кэш Intel macOS 15 не используется.
+- Локально: 82 unittest PASS, ARPL 2048 сочетаний/450 отказов PASS,
+  bash -n, git diff --check и actionlint 1.7.12 PASS.
+- Новый workflow подготовлен к push; полная сборка на macOS ещё не
+  подтверждена. Последний CI был заблокирован GitHub Billing. Следующее:
+  проверить новый CI и сборку Wine через Rosetta после снятия блокировки.
+- Релизные бинарники и манифесты не опубликованы, версии не менялись.
+  Видимость GitHub-репозитория, службы и БД не менялись.
+
 ## Выпуск 20261007 заблокирован GitHub Billing — 07.10.2026
 
 - CI 37586322984 на bd8fadd241aa28b1b831fc9546d4fc6b7a7d75cb завершился

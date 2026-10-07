@@ -1,8 +1,9 @@
 #!/bin/bash
-# Сборка открытого Wine из официального CrossOver на Intel macOS runner.
+# Сборка Wine x86_64 на macos-latest через Rosetta и Homebrew /usr/local.
 set -euo pipefail
 python tools/test_winecx_arpl.py
 test "$(uname -m)" = x86_64
+test "$(brew --prefix)" = /usr/local
 export MACOSX_DEPLOYMENT_TARGET=14.0
 export PATH="$(brew --prefix bison)/bin:$PATH"
 export PKG_CONFIG_PATH="$(brew --prefix freetype)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig"
@@ -10,8 +11,8 @@ export CPPFLAGS="-I$(brew --prefix freetype)/include -I$(brew --prefix gnutls)/i
 export LDFLAGS="-L$(brew --prefix freetype)/lib -L$(brew --prefix gnutls)/lib -L$(brew --prefix molten-vk)/lib"
 export CFLAGS="-O2"
 export CROSSCFLAGS="-O2"
-export CC="ccache clang"
-export CXX="ccache clang++"
+export CC="ccache clang -arch x86_64"
+export CXX="ccache clang++ -arch x86_64"
 export i386_CC="ccache i686-w64-mingw32-gcc"
 export x86_64_CC="ccache x86_64-w64-mingw32-gcc"
 mkdir -p build/winecx-source-tree build/winecx-objects build/winecx/ThirdParty
@@ -48,6 +49,7 @@ make -s -C build/winecx-objects dlls/win32u/vulkan.o dlls/winemac.drv/opengl.o
 make -s -C build/winecx-objects -j"$(sysctl -n hw.ncpu)"
 make -s -C build/winecx-objects install
 python tools/bundle_winecx_libraries.py bundle "$runtime_dir"
+lipo -verify_arch x86_64 "$runtime_dir/bin/wine" "$runtime_dir/bin/wineserver"
 mkdir -p "$runtime_dir/share/wine/mono"
 cp build/winecx-mono "$runtime_dir/share/wine/mono/wine-mono-10.4.1-x86.msi"
 cp "$source_dir/COPYING.LIB" build/winecx/ThirdParty/Wine-COPYING.LIB

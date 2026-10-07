@@ -17,3 +17,9 @@ fi
 # Все зависимости и готовые бутылки перечислены в lock-файле.
 # Свежие формулы и сборка пакетов из исходников здесь не используются.
 python tools/install_winecx_bottles.py
+# Компиляторы выполняются нативно; MinGW всё равно создаёт PE i386/x86_64.
+# На поддерживаемом Apple Silicon требуем bottles без сборки из исходников.
+HOMEBREW_NO_AUTO_UPDATE=1 arch -arm64 /opt/homebrew/bin/brew install --force-bottle mingw-w64 ccache
+lipo -verify_arch arm64 /opt/homebrew/bin/ccache
+lipo -verify_arch arm64 /opt/homebrew/bin/i686-w64-mingw32-gcc
+lipo -verify_arch arm64 /opt/homebrew/bin/x86_64-w64-mingw32-gcc

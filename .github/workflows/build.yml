@@ -71,7 +71,7 @@ jobs:
   build-macos:
     name: macOS release
     runs-on: macos-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       HOMEBREW_NO_AUTO_UPDATE: '1'
       CCACHE_DIR: ${{ github.workspace }}/.ccache-winecx
@@ -111,14 +111,14 @@ jobs:
           path: build/winecx-bottles
           key: winecx-bottles-x86_64-${{ hashFiles('tools/winecx-homebrew-lock.json') }}
       - name: Install Wine build dependencies
-        timeout-minutes: 15
+        timeout-minutes: 25
         if: steps.winecx-cache.outputs.cache-hit != 'true'
         run: bash tools/install_winecx_dependencies.sh
       - name: Build CrossOver 26.3 Wine from source
-        timeout-minutes: 85
+        timeout-minutes: 120
         if: steps.winecx-cache.outputs.cache-hit != 'true'
         run: |
-          arch -x86_64 /bin/bash -c 'export PATH="/usr/local/bin:/usr/local/sbin:$PATH"; exec /bin/bash tools/build_winecx.sh'
+          python tools/run_winecx_build.py --timeout-minutes 110
       - name: Save compiler cache, including failed builds
         if: always() && steps.winecx-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -136,7 +136,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: WineCX-build-diagnostics
-          path: build/winecx-objects/config.log
+          path: |
+            build/winecx-objects/config.log
+            build/winecx-progress.log
 
       - name: Unpack CrossOver Wine runtime
         run: |

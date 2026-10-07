@@ -11,10 +11,12 @@ export CPPFLAGS="-I$(brew --prefix freetype)/include -I$(brew --prefix gnutls)/i
 export LDFLAGS="-L$(brew --prefix freetype)/lib -L$(brew --prefix gnutls)/lib -L$(brew --prefix molten-vk)/lib"
 export CFLAGS="-O2"
 export CROSSCFLAGS="-O2"
-export CC="ccache clang -arch x86_64"
-export CXX="ccache clang++ -arch x86_64"
-export i386_CC="ccache i686-w64-mingw32-gcc"
-export x86_64_CC="ccache x86_64-w64-mingw32-gcc"
+# Нативный arm64 ccache запускает нативный clang с целевой архитектурой x86_64.
+# MinGW arm64 создаёт те же Windows PE, не эмулируя сам компилятор через Rosetta.
+export CC="/opt/homebrew/bin/ccache /usr/bin/clang -arch x86_64"
+export CXX="/opt/homebrew/bin/ccache /usr/bin/clang++ -arch x86_64"
+export i386_CC="/opt/homebrew/bin/ccache /opt/homebrew/bin/i686-w64-mingw32-gcc"
+export x86_64_CC="/opt/homebrew/bin/ccache /opt/homebrew/bin/x86_64-w64-mingw32-gcc"
 mkdir -p build/winecx-source-tree build/winecx-objects build/winecx/ThirdParty
 python - <<'PY'
 import hashlib, json, subprocess
@@ -68,5 +70,5 @@ from pathlib import Path
 lock = json.loads(Path('tools/winecx-lock.json').read_text())
 Path('build/winecx/Wine/dreamworld-runtime-id').write_text(lock['runtime_id'] + '\n')
 PY
-i686-w64-mingw32-gcc -O2 -mfpmath=387 tools/winecx_probe.c -o build/winecx-probe.exe -ld3d9 -lgdi32
+/opt/homebrew/bin/i686-w64-mingw32-gcc -O2 -mfpmath=387 tools/winecx_probe.c -o build/winecx-probe.exe -ld3d9 -lgdi32
 tar -czf build/winecx-runtime.tar.gz -C build/winecx Wine ThirdParty

@@ -176,6 +176,8 @@ assets/
   Wine x86_64 собирается внутри macOS-задачи через Rosetta с отдельным
   Homebrew /usr/local. Зависимости Wine устанавливаются только из bottles
   с закреплёнными версиями/SHA-256 в tools/winecx-homebrew-lock.json;
-  не запускать обычный brew install свежих Intel-формул. Лаунчер/Python/Qt arm64.
+  не запускать обычный brew install свежих Intel-формул. Компиляторы clang,
+  MinGW и ccache выполняются нативно arm64, выход Wine остаётся x86_64.
+  Нативные MinGW/ccache ставятся с --force-bottle. Лаунчер/Python/Qt arm64.
 - Собирать обе платформы в CI; публиковать tools/publish_launchers.py после
   успешных проверок, с отдельным резервом и сегодняшней московской датой.

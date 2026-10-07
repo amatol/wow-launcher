@@ -17,9 +17,17 @@ def stop_group(process):
     time.sleep(2)
     try:
         os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
+    except (ProcessLookupError, PermissionError):
+        # macOS может запрещать сигнал служебному процессу Rosetta в группе.
+        # SIGTERM уже передан; исчезновение make/компиляторов проверяем wait.
         pass
-    process.wait()
+    process.wait(timeout=10)
+
+
+def count_objects():
+    # os.walk пропускает каталоги, удалённые параллельным linker, и не роняет
+    # успешную сборку из-за гонки между scandir и удалением временной папки.
+    return sum(name.endswith('.o') for _, _, files in os.walk('build/winecx-objects') for name in files)
 
 
 def run(command, timeout_seconds, interval=60):
@@ -42,7 +50,7 @@ def run(command, timeout_seconds, interval=60):
                     log.write(message + '\n')
                     return 128 + interrupted[0] if interrupted else 124
                 if now >= next_report:
-                    objects = sum(1 for _ in Path('build/winecx-objects').rglob('*.o'))
+                    objects = count_objects()
                     message = f'Прогресс Wine: {(now - started) / 60:.1f} мин, объектных файлов: {objects}'
                     print(message, flush=True)
                     log.write(message + '\n')

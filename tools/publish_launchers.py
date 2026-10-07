@@ -95,7 +95,11 @@ def main():
     previous['version'] = version
     previous['launchers'] = launchers
     atomic_json(public / 'manifest.json', previous)
-    print(json.dumps({'version': version, 'launchers': launchers}, ensure_ascii=False, indent=2))
+    # Удаление допустимо только после полной публикации обоих манифестов.
+    from tools.prune_launcher_releases import prune_releases
+    cleanup = prune_releases(public, args.backup.parent)
+    print(json.dumps({'version': version, 'launchers': launchers, 'cleanup': cleanup},
+                     ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':

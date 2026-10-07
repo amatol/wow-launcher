@@ -1,4 +1,5 @@
 import io
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -65,6 +66,7 @@ class CorefontsTests(unittest.TestCase):
             self.assertIn('--optout', args[0])
             self.assertEqual(env, {'WINEPREFIX': str(prefix), 'PATH': '/usr/bin:/bin'})
 
+    @unittest.skipUnless(os.name == 'posix', 'Группы процессов Wine проверяются на POSIX')
     def test_timeout_stops_subprocess_group_and_never_marks_ready(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -96,18 +96,26 @@ jobs:
           path: |
             build/winecx-runtime.tar.gz
             build/winecx-probe.exe
-          key: winecx-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-v1-${{ hashFiles('tools/build_winecx.sh', 'tools/install_winecx_dependencies.sh', 'tools/bundle_winecx_libraries.py', 'tools/winecx-lock.json', 'tools/winecx_probe.c', 'tools/patches/*.patch') }}
+          key: winecx-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-bottles-v2-${{ hashFiles('tools/build_winecx.sh', 'tools/install_winecx_dependencies.sh', 'tools/install_winecx_bottles.py', 'tools/winecx-homebrew-lock.json', 'tools/bundle_winecx_libraries.py', 'tools/winecx-lock.json', 'tools/winecx_probe.c', 'tools/patches/*.patch') }}
       - name: Restore compiler cache
         if: steps.winecx-cache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: .ccache-winecx
-          key: winecx-objects-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-v1-${{ github.run_id }}
-          restore-keys: winecx-objects-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-v1-
+          key: winecx-objects-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-bottles-v2-${{ github.run_id }}
+          restore-keys: winecx-objects-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-bottles-v2-
+      - name: Cache pinned Wine dependency bottles
+        if: steps.winecx-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: build/winecx-bottles
+          key: winecx-bottles-x86_64-${{ hashFiles('tools/winecx-homebrew-lock.json') }}
       - name: Install Wine build dependencies
+        timeout-minutes: 15
         if: steps.winecx-cache.outputs.cache-hit != 'true'
         run: bash tools/install_winecx_dependencies.sh
       - name: Build CrossOver 26.3 Wine from source
+        timeout-minutes: 85
         if: steps.winecx-cache.outputs.cache-hit != 'true'
         run: |
           arch -x86_64 /bin/bash -c 'export PATH="/usr/local/bin:/usr/local/sbin:$PATH"; exec /bin/bash tools/build_winecx.sh'
@@ -116,7 +124,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .ccache-winecx
-          key: winecx-objects-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-v1-${{ github.run_id }}
+          key: winecx-objects-26.3.0-${{ runner.os }}-${{ runner.arch }}-macos${{ steps.macos-platform.outputs.version }}-rosetta-bottles-v2-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
         with:
           name: WineCX-runtime

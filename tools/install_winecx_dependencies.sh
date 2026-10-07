@@ -14,10 +14,6 @@ if [ ! -x /usr/local/bin/brew ]; then
       -o "$installer"
     NONINTERACTIVE=1 arch -x86_64 /bin/bash "$installer"
 fi
-arch -x86_64 /bin/bash -c '
-    set -euo pipefail
-    export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
-    test "$(uname -m)" = x86_64
-    test "$(brew --prefix)" = /usr/local
-    brew install bison mingw-w64 pkgconf freetype gnutls molten-vk ccache
-'
+# Все зависимости и готовые бутылки перечислены в lock-файле.
+# Свежие формулы и сборка пакетов из исходников здесь не используются.
+python tools/install_winecx_bottles.py

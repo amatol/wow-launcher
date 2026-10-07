@@ -1,0 +1,1379 @@
+{
+  "schema": 1,
+  "source": "Пакеты успешного выпуска WineCX 20261006, homebrew-dependencies.json установленного Dreamworld.app",
+  "roots": [
+    "bison",
+    "mingw-w64",
+    "pkgconf",
+    "freetype",
+    "gnutls",
+    "molten-vk",
+    "ccache"
+  ],
+  "packages": [
+    {
+      "name": "bison",
+      "version": "3.8.2",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/bison/blobs/sha256:cadf52c2fd93ef340f01a36a8468b8725f5218ee6c62773b3838b8c01c862c9b",
+      "sha256": "cadf52c2fd93ef340f01a36a8468b8725f5218ee6c62773b3838b8c01c862c9b",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "bison",
+        "full_name": "bison",
+        "desc": "Parser generator",
+        "homepage": "https://www.gnu.org/software/bison/",
+        "license": "GPL-3.0-or-later",
+        "versions": {
+          "stable": "3.8.2",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/bison/bison-3.8.2.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any_skip_relocation",
+                "url": "https://ghcr.io/v2/homebrew/core/bison/blobs/sha256:cadf52c2fd93ef340f01a36a8468b8725f5218ee6c62773b3838b8c01c862c9b",
+                "sha256": "cadf52c2fd93ef340f01a36a8468b8725f5218ee6c62773b3838b8c01c862c9b"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "gmp",
+      "version": "6.3.0",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/gmp/blobs/sha256:d1192da68b2618652f4be0dd9f56b18d2d276481440ae241ce9cc17be0450e07",
+      "sha256": "d1192da68b2618652f4be0dd9f56b18d2d276481440ae241ce9cc17be0450e07",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "gmp",
+        "full_name": "gmp",
+        "desc": "GNU multiple precision arithmetic library",
+        "homepage": "https://gmplib.org/",
+        "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+        "versions": {
+          "stable": "6.3.0",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+          },
+          "head": {
+            "url": "https://gmplib.org/repo/gmp/",
+            "branch": null,
+            "using": "hg"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/gmp/blobs/sha256:d1192da68b2618652f4be0dd9f56b18d2d276481440ae241ce9cc17be0450e07",
+                "sha256": "d1192da68b2618652f4be0dd9f56b18d2d276481440ae241ce9cc17be0450e07"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "isl",
+      "version": "0.28",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/isl/blobs/sha256:dca49213f0e9bccffe590c7477de4455a0dfbb65ab542854b1c1f52abfa10213",
+      "sha256": "dca49213f0e9bccffe590c7477de4455a0dfbb65ab542854b1c1f52abfa10213",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "gmp"
+      ],
+      "formula": {
+        "name": "isl",
+        "full_name": "isl",
+        "desc": "Integer Set Library for the polyhedral model",
+        "homepage": "https://libisl.sourceforge.io/",
+        "license": "MIT",
+        "versions": {
+          "stable": "0.28",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://libisl.sourceforge.io/isl-0.28.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "3dc31b8e1b18329e42d5dfbf84dd55e15c59b61569a2ab246f61497d9592f727"
+          },
+          "head": {
+            "url": "https://repo.or.cz/isl.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/isl/blobs/sha256:dca49213f0e9bccffe590c7477de4455a0dfbb65ab542854b1c1f52abfa10213",
+                "sha256": "dca49213f0e9bccffe590c7477de4455a0dfbb65ab542854b1c1f52abfa10213"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "mpfr",
+      "version": "4.2.2",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/mpfr/blobs/sha256:ba4a1b8388386e6618de7c7e27199ae8de473373330f5773e2095567a71d76fd",
+      "sha256": "ba4a1b8388386e6618de7c7e27199ae8de473373330f5773e2095567a71d76fd",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "gmp"
+      ],
+      "formula": {
+        "name": "mpfr",
+        "full_name": "mpfr",
+        "desc": "C library for multiple-precision floating-point computations",
+        "homepage": "https://www.mpfr.org/",
+        "license": "LGPL-3.0-or-later",
+        "versions": {
+          "stable": "4.2.2",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01"
+          },
+          "head": {
+            "url": "https://gitlab.inria.fr/mpfr/mpfr.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/mpfr/blobs/sha256:ba4a1b8388386e6618de7c7e27199ae8de473373330f5773e2095567a71d76fd",
+                "sha256": "ba4a1b8388386e6618de7c7e27199ae8de473373330f5773e2095567a71d76fd"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "libmpc",
+      "version": "1.4.1",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/libmpc/blobs/sha256:6c035aa0556baf634ceda0edc4415b6f03d675568873b6ffec4b8c6146639f44",
+      "sha256": "6c035aa0556baf634ceda0edc4415b6f03d675568873b6ffec4b8c6146639f44",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "gmp",
+        "mpfr"
+      ],
+      "formula": {
+        "name": "libmpc",
+        "full_name": "libmpc",
+        "desc": "C library for the arithmetic of high precision complex numbers",
+        "homepage": "https://www.multiprecision.org/",
+        "license": "LGPL-3.0-or-later",
+        "versions": {
+          "stable": "1.4.1",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/mpc/mpc-1.4.1.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "91204cd32f164bd3b7c992d4a6a8ce6519511aadab30f78b6982d0bf8d73e931"
+          },
+          "head": {
+            "url": "https://gitlab.inria.fr/mpc/mpc.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/libmpc/blobs/sha256:6c035aa0556baf634ceda0edc4415b6f03d675568873b6ffec4b8c6146639f44",
+                "sha256": "6c035aa0556baf634ceda0edc4415b6f03d675568873b6ffec4b8c6146639f44"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "lz4",
+      "version": "1.10.0",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/lz4/blobs/sha256:f75cb29a4d25d37e1db38d95c5970cc45de7ec63ce43cfa881a877b424154a42",
+      "sha256": "f75cb29a4d25d37e1db38d95c5970cc45de7ec63ce43cfa881a877b424154a42",
+      "rebuild": 1,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "lz4",
+        "full_name": "lz4",
+        "desc": "Extremely Fast Compression algorithm",
+        "homepage": "https://lz4.github.io/lz4/",
+        "license": "BSD-2-Clause",
+        "versions": {
+          "stable": "1.10.0",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/lz4/lz4/archive/refs/tags/v1.10.0.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b"
+          },
+          "head": {
+            "url": "https://github.com/lz4/lz4.git",
+            "branch": "dev",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 1,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/lz4/blobs/sha256:f75cb29a4d25d37e1db38d95c5970cc45de7ec63ce43cfa881a877b424154a42",
+                "sha256": "f75cb29a4d25d37e1db38d95c5970cc45de7ec63ce43cfa881a877b424154a42"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "xz",
+      "version": "5.8.3",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/xz/blobs/sha256:be9bd234f1e9ec28b25cd8ce0850ea841751cd337dffd6f104432c57cdc32c78",
+      "sha256": "be9bd234f1e9ec28b25cd8ce0850ea841751cd337dffd6f104432c57cdc32c78",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "xz",
+        "full_name": "xz",
+        "desc": "General-purpose data compression with high compression ratio",
+        "homepage": "https://tukaani.org/xz/",
+        "license": "0BSD AND GPL-2.0-or-later",
+        "versions": {
+          "stable": "5.8.3",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "3d3a1b973af218114f4f889bbaa2f4c037deaae0c8e815eec381c3d546b974a0"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/xz/blobs/sha256:be9bd234f1e9ec28b25cd8ce0850ea841751cd337dffd6f104432c57cdc32c78",
+                "sha256": "be9bd234f1e9ec28b25cd8ce0850ea841751cd337dffd6f104432c57cdc32c78"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7_1",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/zstd/blobs/sha256:8b2443dfa62b9d28cf0321e0e670bb096b2680fe72739999228291f36018311f",
+      "sha256": "8b2443dfa62b9d28cf0321e0e670bb096b2680fe72739999228291f36018311f",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "lz4",
+        "xz"
+      ],
+      "formula": {
+        "name": "zstd",
+        "full_name": "zstd",
+        "desc": "Zstandard is a real-time compression algorithm",
+        "homepage": "https://facebook.github.io/zstd/",
+        "license": "(BSD-3-Clause OR GPL-2.0-only) AND BSD-2-Clause AND MIT",
+        "versions": {
+          "stable": "1.5.7",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 1,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3"
+          },
+          "head": {
+            "url": "https://github.com/facebook/zstd.git",
+            "branch": "dev",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/zstd/blobs/sha256:8b2443dfa62b9d28cf0321e0e670bb096b2680fe72739999228291f36018311f",
+                "sha256": "8b2443dfa62b9d28cf0321e0e670bb096b2680fe72739999228291f36018311f"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "mingw-w64",
+      "version": "14.0.0_3",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/mingw-w64/blobs/sha256:623551323695d700a811c0243cba59cfff7d31a9e42f66ae02cf7d84b9cbcb00",
+      "sha256": "623551323695d700a811c0243cba59cfff7d31a9e42f66ae02cf7d84b9cbcb00",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "gmp",
+        "isl",
+        "mpfr",
+        "libmpc",
+        "lz4",
+        "xz",
+        "zstd"
+      ],
+      "formula": {
+        "name": "mingw-w64",
+        "full_name": "mingw-w64",
+        "desc": "Minimalist GNU for Windows and GCC cross-compilers",
+        "homepage": "https://sourceforge.net/projects/mingw-w64/",
+        "license": "ZPL-2.1 AND (GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.0-or-later AND LGPL-3.0-only) AND (GPL-3.0-or-later WITH GCC-exception-3.1)",
+        "versions": {
+          "stable": "14.0.0",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 3,
+        "urls": {
+          "stable": {
+            "url": "https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v14.0.0.tar.bz2",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "6eaf921d9eb987d3820b364ea9775bc19b965ec81490b6fdd716526c28e1995c"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": "/usr/local/Cellar",
+                "url": "https://ghcr.io/v2/homebrew/core/mingw-w64/blobs/sha256:623551323695d700a811c0243cba59cfff7d31a9e42f66ae02cf7d84b9cbcb00",
+                "sha256": "623551323695d700a811c0243cba59cfff7d31a9e42f66ae02cf7d84b9cbcb00"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pkgconf",
+      "version": "3.0.5",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/pkgconf/blobs/sha256:33ddcb403a56549dcdf1b1df42d4be71141067a702ed91dd4299052727b27495",
+      "sha256": "33ddcb403a56549dcdf1b1df42d4be71141067a702ed91dd4299052727b27495",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "pkgconf",
+        "full_name": "pkgconf",
+        "desc": "Package compiler and linker metadata toolkit",
+        "homepage": "https://github.com/pkgconf/pkgconf",
+        "license": "ISC",
+        "versions": {
+          "stable": "3.0.5",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://distfiles.ariadne.space/pkgconf/pkgconf-3.0.5.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "3acd3a8a3cce65a8d620321855d92fb602e026cbe8e13ee36bdec58483b59ace"
+          },
+          "head": {
+            "url": "https://github.com/pkgconf/pkgconf.git",
+            "branch": "main",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": "/usr/local/Cellar",
+                "url": "https://ghcr.io/v2/homebrew/core/pkgconf/blobs/sha256:33ddcb403a56549dcdf1b1df42d4be71141067a702ed91dd4299052727b27495",
+                "sha256": "33ddcb403a56549dcdf1b1df42d4be71141067a702ed91dd4299052727b27495"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "libpng",
+      "version": "1.6.58",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/libpng/blobs/sha256:c74a40635359b753e614fb0a69a32149179a27f79d3338d5c5b685f66e223967",
+      "sha256": "c74a40635359b753e614fb0a69a32149179a27f79d3338d5c5b685f66e223967",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "libpng",
+        "full_name": "libpng",
+        "desc": "Library for manipulating PNG images",
+        "homepage": "https://www.libpng.org/pub/png/libpng.html",
+        "license": "libpng-2.0",
+        "versions": {
+          "stable": "1.6.58",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://downloads.sourceforge.net/project/libpng/libpng16/1.6.58/libpng-1.6.58.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "28eb403f51f0f7405249132cecfe82ea5c0ef97f1b32c5a65828814ae0d34775"
+          },
+          "head": {
+            "url": "https://github.com/pnggroup/libpng.git",
+            "branch": "libpng16",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/libpng/blobs/sha256:c74a40635359b753e614fb0a69a32149179a27f79d3338d5c5b685f66e223967",
+                "sha256": "c74a40635359b753e614fb0a69a32149179a27f79d3338d5c5b685f66e223967"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "freetype",
+      "version": "2.14.3",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/freetype/blobs/sha256:c266877a4676016b189131c87355f3e9be0d5e0edbe3a464b5b6ef039945f199",
+      "sha256": "c266877a4676016b189131c87355f3e9be0d5e0edbe3a464b5b6ef039945f199",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "libpng"
+      ],
+      "formula": {
+        "name": "freetype",
+        "full_name": "freetype",
+        "desc": "Software library to render fonts",
+        "homepage": "https://www.freetype.org/",
+        "license": "FTL",
+        "versions": {
+          "stable": "2.14.3",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://downloads.sourceforge.net/project/freetype/freetype2/2.14.3/freetype-2.14.3.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/freetype/blobs/sha256:c266877a4676016b189131c87355f3e9be0d5e0edbe3a464b5b6ef039945f199",
+                "sha256": "c266877a4676016b189131c87355f3e9be0d5e0edbe3a464b5b6ef039945f199"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ca-certificates",
+      "version": "2026-08-13",
+      "tag": "all",
+      "url": "https://ghcr.io/v2/homebrew/core/ca-certificates/blobs/sha256:797af9bcf375fb49a98db40c3d5674276db1eb1b5e605ec98359619ed50948ba",
+      "sha256": "797af9bcf375fb49a98db40c3d5674276db1eb1b5e605ec98359619ed50948ba",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "ca-certificates",
+        "full_name": "ca-certificates",
+        "desc": "Mozilla CA certificate store",
+        "homepage": "https://curl.se/docs/caextract.html",
+        "license": "MPL-2.0",
+        "versions": {
+          "stable": "2026-08-13",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://curl.se/ca/cacert-2026-08-13.pem",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "f66dff1bdf8f96060b8177976f8b7d9254bc89bc4db933d769f7384d28480bc9"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "all": {
+                "cellar": ":any_skip_relocation",
+                "url": "https://ghcr.io/v2/homebrew/core/ca-certificates/blobs/sha256:797af9bcf375fb49a98db40c3d5674276db1eb1b5e605ec98359619ed50948ba",
+                "sha256": "797af9bcf375fb49a98db40c3d5674276db1eb1b5e605ec98359619ed50948ba"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "libunistring",
+      "version": "1.4.2",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/libunistring/blobs/sha256:fbb3a7908a19f306823dbd51b417705c73f710a9a1fb1e34ba7aa67a3c966094",
+      "sha256": "fbb3a7908a19f306823dbd51b417705c73f710a9a1fb1e34ba7aa67a3c966094",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "libunistring",
+        "full_name": "libunistring",
+        "desc": "C string library for manipulating Unicode strings",
+        "homepage": "https://www.gnu.org/software/libunistring/",
+        "license": "GPL-2.0-or-later OR LGPL-3.0-or-later",
+        "versions": {
+          "stable": "1.4.2",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/libunistring/libunistring-1.4.2.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "e82664b170064e62331962126b259d452d53b227bb4a93ab20040d846fec01d8"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/libunistring/blobs/sha256:fbb3a7908a19f306823dbd51b417705c73f710a9a1fb1e34ba7aa67a3c966094",
+                "sha256": "fbb3a7908a19f306823dbd51b417705c73f710a9a1fb1e34ba7aa67a3c966094"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "json-c",
+      "version": "0.19",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/json-c/blobs/sha256:616cd6df4b887c15fbe14f1b8e15a1832d0e7790152bd5ae5c6469c896d96fae",
+      "sha256": "616cd6df4b887c15fbe14f1b8e15a1832d0e7790152bd5ae5c6469c896d96fae",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "json-c",
+        "full_name": "json-c",
+        "desc": "JSON parser for C",
+        "homepage": "https://github.com/json-c/json-c/wiki",
+        "license": "MIT",
+        "versions": {
+          "stable": "0.19",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.19.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "37ad0249902e301bd9052bf712e511fcc6acff4ecaad4b5900aad9ce564e26de"
+          },
+          "head": {
+            "url": "https://github.com/json-c/json-c.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/json-c/blobs/sha256:616cd6df4b887c15fbe14f1b8e15a1832d0e7790152bd5ae5c6469c896d96fae",
+                "sha256": "616cd6df4b887c15fbe14f1b8e15a1832d0e7790152bd5ae5c6469c896d96fae"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "gettext",
+      "version": "1.0",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/gettext/blobs/sha256:e0072004be0db53c5f501d6ab2b78b9219067243f8989c40604720751dd6bdc4",
+      "sha256": "e0072004be0db53c5f501d6ab2b78b9219067243f8989c40604720751dd6bdc4",
+      "rebuild": 1,
+      "runtime_dependencies": [
+        "json-c",
+        "libunistring"
+      ],
+      "formula": {
+        "name": "gettext",
+        "full_name": "gettext",
+        "desc": "GNU internationalization (i18n) and localization (l10n) library",
+        "homepage": "https://www.gnu.org/software/gettext/",
+        "license": "GPL-3.0-or-later AND LGPL-2.1-or-later",
+        "versions": {
+          "stable": "1.0",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/gettext/gettext-1.0.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "85d99b79c981a404874c02e0342176cf75c7698e2b51fe41031cf6526d974f1a"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 1,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": "/usr/local/Cellar",
+                "url": "https://ghcr.io/v2/homebrew/core/gettext/blobs/sha256:e0072004be0db53c5f501d6ab2b78b9219067243f8989c40604720751dd6bdc4",
+                "sha256": "e0072004be0db53c5f501d6ab2b78b9219067243f8989c40604720751dd6bdc4"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "libidn2",
+      "version": "2.3.8",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/libidn2/blobs/sha256:ef2c85790a55f54f58fceb849e1ee46f2b06ebe516c83043e68c979e47934e6f",
+      "sha256": "ef2c85790a55f54f58fceb849e1ee46f2b06ebe516c83043e68c979e47934e6f",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "libunistring",
+        "json-c",
+        "gettext"
+      ],
+      "formula": {
+        "name": "libidn2",
+        "full_name": "libidn2",
+        "desc": "International domain name library (IDNA2008, Punycode and TR46)",
+        "homepage": "https://www.gnu.org/software/libidn/#libidn2",
+        "license": "(GPL-2.0-or-later OR LGPL-3.0-or-later) AND (Unicode-TOU AND Unicode-DFS-2016) AND GPL-3.0-or-later AND LGPL-2.1-or-later AND FSFAP-no-warranty-disclaimer",
+        "versions": {
+          "stable": "2.3.8",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "f557911bf6171621e1f72ff35f5b1825bb35b52ed45325dcdee931e5d3c0787a"
+          },
+          "head": {
+            "url": "https://gitlab.com/libidn/libidn2.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": "/usr/local/Cellar",
+                "url": "https://ghcr.io/v2/homebrew/core/libidn2/blobs/sha256:ef2c85790a55f54f58fceb849e1ee46f2b06ebe516c83043e68c979e47934e6f",
+                "sha256": "ef2c85790a55f54f58fceb849e1ee46f2b06ebe516c83043e68c979e47934e6f"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "libtasn1",
+      "version": "4.21.0",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/libtasn1/blobs/sha256:71c5d144fdce79e4cfe7bbd5863da5171a13d892a26475c5ea183e7e3ef21d8f",
+      "sha256": "71c5d144fdce79e4cfe7bbd5863da5171a13d892a26475c5ea183e7e3ef21d8f",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "libtasn1",
+        "full_name": "libtasn1",
+        "desc": "ASN.1 structure parser library",
+        "homepage": "https://www.gnu.org/software/libtasn1/",
+        "license": "LGPL-2.1-or-later",
+        "versions": {
+          "stable": "4.21.0",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/libtasn1/libtasn1-4.21.0.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/libtasn1/blobs/sha256:71c5d144fdce79e4cfe7bbd5863da5171a13d892a26475c5ea183e7e3ef21d8f",
+                "sha256": "71c5d144fdce79e4cfe7bbd5863da5171a13d892a26475c5ea183e7e3ef21d8f"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "nettle",
+      "version": "4.0",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/nettle/blobs/sha256:2830a19a06e2995fc7a19ecd7c14d3bc87e9362fb9c52d2489582246f256662d",
+      "sha256": "2830a19a06e2995fc7a19ecd7c14d3bc87e9362fb9c52d2489582246f256662d",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "gmp"
+      ],
+      "formula": {
+        "name": "nettle",
+        "full_name": "nettle",
+        "desc": "Low-level cryptographic library",
+        "homepage": "https://www.lysator.liu.se/~nisse/nettle/",
+        "license": "GPL-2.0-or-later OR LGPL-3.0-or-later",
+        "versions": {
+          "stable": "4.0",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://ftpmirror.gnu.org/gnu/nettle/nettle-4.0.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/nettle/blobs/sha256:2830a19a06e2995fc7a19ecd7c14d3bc87e9362fb9c52d2489582246f256662d",
+                "sha256": "2830a19a06e2995fc7a19ecd7c14d3bc87e9362fb9c52d2489582246f256662d"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "p11-kit",
+      "version": "0.26.5",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/p11-kit/blobs/sha256:33b926d2b5f760e24aadc8b44a8f29caffda8a9637c2497fc7abebb125650baa",
+      "sha256": "33b926d2b5f760e24aadc8b44a8f29caffda8a9637c2497fc7abebb125650baa",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "ca-certificates",
+        "libtasn1"
+      ],
+      "formula": {
+        "name": "p11-kit",
+        "full_name": "p11-kit",
+        "desc": "Library to load and enumerate PKCS#11 modules",
+        "homepage": "https://p11-glue.github.io/p11-glue/p11-kit.html",
+        "license": "BSD-3-Clause",
+        "versions": {
+          "stable": "0.26.5",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/p11-glue/p11-kit/releases/download/0.26.5/p11-kit-0.26.5.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "f2cc09111e44bf3fea58f023180b33acea90aa82d042d6fbb623fbc5ba033bb7"
+          },
+          "head": {
+            "url": "https://github.com/p11-glue/p11-kit.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": "/usr/local/Cellar",
+                "url": "https://ghcr.io/v2/homebrew/core/p11-kit/blobs/sha256:33b926d2b5f760e24aadc8b44a8f29caffda8a9637c2497fc7abebb125650baa",
+                "sha256": "33b926d2b5f760e24aadc8b44a8f29caffda8a9637c2497fc7abebb125650baa"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "gnutls",
+      "version": "3.8.13_2",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/gnutls/blobs/sha256:77ec479ca9c1a6c80058f5bc9a908a1afd271f39a5cf69935e07fea4129a3824",
+      "sha256": "77ec479ca9c1a6c80058f5bc9a908a1afd271f39a5cf69935e07fea4129a3824",
+      "rebuild": 1,
+      "runtime_dependencies": [
+        "ca-certificates",
+        "gmp",
+        "libunistring",
+        "json-c",
+        "gettext",
+        "libidn2",
+        "libtasn1",
+        "nettle",
+        "p11-kit"
+      ],
+      "formula": {
+        "name": "gnutls",
+        "full_name": "gnutls",
+        "desc": "GNU Transport Layer Security (TLS) Library",
+        "homepage": "https://gnutls.org/",
+        "license": "LGPL-2.1-or-later AND GPL-3.0-only",
+        "versions": {
+          "stable": "3.8.13",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 2,
+        "urls": {
+          "stable": {
+            "url": "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 1,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/gnutls/blobs/sha256:77ec479ca9c1a6c80058f5bc9a908a1afd271f39a5cf69935e07fea4129a3824",
+                "sha256": "77ec479ca9c1a6c80058f5bc9a908a1afd271f39a5cf69935e07fea4129a3824"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "molten-vk",
+      "version": "1.4.2",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/molten-vk/blobs/sha256:4d72464ad51723c9afeea216088deb733596fc6b544d4738e90824f4eb04a039",
+      "sha256": "4d72464ad51723c9afeea216088deb733596fc6b544d4738e90824f4eb04a039",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "molten-vk",
+        "full_name": "molten-vk",
+        "desc": "Implementation of the Vulkan graphics and compute API on top of Metal",
+        "homepage": "https://github.com/KhronosGroup/MoltenVK",
+        "license": "Apache-2.0",
+        "versions": {
+          "stable": "1.4.2",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/KhronosGroup/MoltenVK/archive/refs/tags/v1.4.2.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "6864db532f1dbbdb621a8d0ec13f24edae318fd9269dd3dd0cdff791334bb1cb"
+          },
+          "head": {
+            "url": "https://github.com/KhronosGroup/MoltenVK.git",
+            "branch": "main",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/molten-vk/blobs/sha256:4d72464ad51723c9afeea216088deb733596fc6b544d4738e90824f4eb04a039",
+                "sha256": "4d72464ad51723c9afeea216088deb733596fc6b544d4738e90824f4eb04a039"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "blake3",
+      "version": "1.8.7",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/blake3/blobs/sha256:c7611f7cd8e93ecbcf1b9e325e6dfdf2a7b5e2d451321b5e97d9028d17d6b854",
+      "sha256": "c7611f7cd8e93ecbcf1b9e325e6dfdf2a7b5e2d451321b5e97d9028d17d6b854",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "blake3",
+        "full_name": "blake3",
+        "desc": "C implementation of the BLAKE3 cryptographic hash function",
+        "homepage": "https://github.com/BLAKE3-team/BLAKE3",
+        "license": "CC0-1.0 OR Apache-2.0",
+        "versions": {
+          "stable": "1.8.7",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/BLAKE3-team/BLAKE3/archive/refs/tags/1.8.7.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "c6782a28842b1c0478524ac06a4f2ede784038ee298d6e2162c0b089c4306a3c"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/blake3/blobs/sha256:c7611f7cd8e93ecbcf1b9e325e6dfdf2a7b5e2d451321b5e97d9028d17d6b854",
+                "sha256": "c7611f7cd8e93ecbcf1b9e325e6dfdf2a7b5e2d451321b5e97d9028d17d6b854"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fmt",
+      "version": "12.2.0",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/fmt/blobs/sha256:125d40bb96aec4f198a16252ec5358ba1c96243003e2f05d74826d867e012ddd",
+      "sha256": "125d40bb96aec4f198a16252ec5358ba1c96243003e2f05d74826d867e012ddd",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "fmt",
+        "full_name": "fmt",
+        "desc": "Open-source formatting library for C++",
+        "homepage": "https://fmt.dev/",
+        "license": "MIT",
+        "versions": {
+          "stable": "12.2.0",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/fmtlib/fmt/releases/download/12.2.0/fmt-12.2.0.zip",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "a2f4a8d51178f954e4c339007f77edd76ba0cb2e36f87a48e5a5403d9be5878f"
+          },
+          "head": {
+            "url": "https://github.com/fmtlib/fmt.git",
+            "branch": "main",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/fmt/blobs/sha256:125d40bb96aec4f198a16252ec5358ba1c96243003e2f05d74826d867e012ddd",
+                "sha256": "125d40bb96aec4f198a16252ec5358ba1c96243003e2f05d74826d867e012ddd"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "openssl@3",
+      "version": "3.6.3",
+      "tag": "sequoia",
+      "url": "https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:5477285c4ebec45713873ae4002affece39e427c5f1b655c6a3df49c6b90f924",
+      "sha256": "5477285c4ebec45713873ae4002affece39e427c5f1b655c6a3df49c6b90f924",
+      "rebuild": 1,
+      "runtime_dependencies": [
+        "ca-certificates"
+      ],
+      "formula": {
+        "name": "openssl@3",
+        "full_name": "openssl@3",
+        "desc": "Cryptography and SSL/TLS Toolkit",
+        "homepage": "https://openssl-library.org",
+        "license": "Apache-2.0",
+        "versions": {
+          "stable": "3.6.3",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 1,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sequoia": {
+                "cellar": "/usr/local/Cellar",
+                "url": "https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:5477285c4ebec45713873ae4002affece39e427c5f1b655c6a3df49c6b90f924",
+                "sha256": "5477285c4ebec45713873ae4002affece39e427c5f1b655c6a3df49c6b90f924"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "hiredis",
+      "version": "1.4.1",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/hiredis/blobs/sha256:b14620a2482fbb380412ace6d8f86a6632e359beed6ed22b5305ce0be77268b9",
+      "sha256": "b14620a2482fbb380412ace6d8f86a6632e359beed6ed22b5305ce0be77268b9",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "ca-certificates",
+        "openssl@3"
+      ],
+      "formula": {
+        "name": "hiredis",
+        "full_name": "hiredis",
+        "desc": "Minimalistic client for Redis",
+        "homepage": "https://github.com/redis/hiredis",
+        "license": "BSD-3-Clause",
+        "versions": {
+          "stable": "1.4.1",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/redis/hiredis/archive/refs/tags/v1.4.1.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "ca3180359a8b1275838a45415851f8cd5c411e27bdbf18f4823012e45507d2e4"
+          },
+          "head": {
+            "url": "https://github.com/redis/hiredis.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/hiredis/blobs/sha256:b14620a2482fbb380412ace6d8f86a6632e359beed6ed22b5305ce0be77268b9",
+                "sha256": "b14620a2482fbb380412ace6d8f86a6632e359beed6ed22b5305ce0be77268b9"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "xxhash",
+      "version": "0.8.3",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/xxhash/blobs/sha256:e2355ea12831286d6858820e7fedcc3a044904f510ecc47d988698cd629a7ab0",
+      "sha256": "e2355ea12831286d6858820e7fedcc3a044904f510ecc47d988698cd629a7ab0",
+      "rebuild": 0,
+      "runtime_dependencies": [],
+      "formula": {
+        "name": "xxhash",
+        "full_name": "xxhash",
+        "desc": "Extremely fast non-cryptographic hash algorithm",
+        "homepage": "https://xxhash.com",
+        "license": "BSD-2-Clause AND GPL-2.0-or-later",
+        "versions": {
+          "stable": "0.8.3",
+          "head": null,
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/Cyan4973/xxHash/archive/refs/tags/v0.8.3.tar.gz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "aae608dfe8213dfd05d909a57718ef82f30722c392344583d3f39050c7f29a80"
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/xxhash/blobs/sha256:e2355ea12831286d6858820e7fedcc3a044904f510ecc47d988698cd629a7ab0",
+                "sha256": "e2355ea12831286d6858820e7fedcc3a044904f510ecc47d988698cd629a7ab0"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ccache",
+      "version": "4.14",
+      "tag": "sonoma",
+      "url": "https://ghcr.io/v2/homebrew/core/ccache/blobs/sha256:7de841855e44972bf8ab43408b7996d6dbfb15de7b08042e783d6d400538ac27",
+      "sha256": "7de841855e44972bf8ab43408b7996d6dbfb15de7b08042e783d6d400538ac27",
+      "rebuild": 0,
+      "runtime_dependencies": [
+        "blake3",
+        "fmt",
+        "ca-certificates",
+        "openssl@3",
+        "hiredis",
+        "xxhash",
+        "lz4",
+        "xz",
+        "zstd"
+      ],
+      "formula": {
+        "name": "ccache",
+        "full_name": "ccache",
+        "desc": "Object-file caching compiler wrapper",
+        "homepage": "https://ccache.dev/",
+        "license": "GPL-3.0-or-later",
+        "versions": {
+          "stable": "4.14",
+          "head": "HEAD",
+          "bottle": true
+        },
+        "revision": 0,
+        "urls": {
+          "stable": {
+            "url": "https://github.com/ccache/ccache/releases/download/v4.14/ccache-4.14.tar.xz",
+            "tag": null,
+            "revision": null,
+            "using": null,
+            "checksum": "b093ac5d38204cb4d9f29b0bbd570675aa5a592a78e6675b2c506dbe045234e7"
+          },
+          "head": {
+            "url": "https://github.com/ccache/ccache.git",
+            "branch": "master",
+            "using": null
+          }
+        },
+        "bottle": {
+          "stable": {
+            "rebuild": 0,
+            "root_url": "https://ghcr.io/v2/homebrew/core",
+            "files": {
+              "sonoma": {
+                "cellar": ":any",
+                "url": "https://ghcr.io/v2/homebrew/core/ccache/blobs/sha256:7de841855e44972bf8ab43408b7996d6dbfb15de7b08042e783d6d400538ac27",
+                "sha256": "7de841855e44972bf8ab43408b7996d6dbfb15de7b08042e783d6d400538ac27"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

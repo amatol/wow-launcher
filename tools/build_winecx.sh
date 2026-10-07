@@ -54,7 +54,14 @@ mkdir -p "$runtime_dir/share/wine/mono"
 cp build/winecx-mono "$runtime_dir/share/wine/mono/wine-mono-10.4.1-x86.msi"
 cp "$source_dir/COPYING.LIB" build/winecx/ThirdParty/Wine-COPYING.LIB
 cp tools/winecx-lock.json tools/winecx-SOURCES.txt tools/patches/winecx-arpl.patch build/winecx/ThirdParty/
-brew info --json=v2 --installed > build/winecx/ThirdParty/homebrew-dependencies.json
+python - <<'PYMETA'
+import json
+from pathlib import Path
+lock = json.loads(Path('tools/winecx-homebrew-lock.json').read_text())
+Path('build/winecx/ThirdParty/homebrew-dependencies.json').write_text(
+    json.dumps({'formulae': [p['formula'] for p in lock['packages']]}, indent=2) + '\n')
+PYMETA
+cp tools/winecx-homebrew-lock.json build/winecx/ThirdParty/
 python - <<'PY'
 import json
 from pathlib import Path

@@ -174,6 +174,8 @@ assets/
   чужой лаунчер устанавливается при обновлении клиента, свой — через диалог.
 - CI: Windows на windows-latest, macOS на macos-latest (Apple Silicon).
   Wine x86_64 собирается внутри macOS-задачи через Rosetta с отдельным
-  Homebrew /usr/local; лаунчер и его Python/Qt остаются нативными arm64.
+  Homebrew /usr/local. Зависимости Wine устанавливаются только из bottles
+  с закреплёнными версиями/SHA-256 в tools/winecx-homebrew-lock.json;
+  не запускать обычный brew install свежих Intel-формул. Лаунчер/Python/Qt arm64.
 - Собирать обе платформы в CI; публиковать tools/publish_launchers.py после
   успешных проверок, с отдельным резервом и сегодняшней московской датой.

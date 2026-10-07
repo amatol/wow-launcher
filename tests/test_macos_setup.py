@@ -12,6 +12,9 @@ class MacSetupTests(unittest.TestCase):
         migration = patch('core.macos_setup.ensure_runtime_prefix')
         migration.start()
         self.addCleanup(migration.stop)
+        fonts = patch('core.macos_setup.prepare_corefonts')
+        fonts.start()
+        self.addCleanup(fonts.stop)
 
     def test_preserves_non_utf8_crlf_and_existing_values_and_backup(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -72,10 +75,11 @@ class MacSetupTests(unittest.TestCase):
             for path in runtime_files(prefix):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(b'MZ' + b'\0' * 126)
-            with patch('core.macos_setup.subprocess.run') as run, patch('core.macos_setup.urllib.request.urlopen') as download:
+            with patch('core.macos_setup.subprocess.run') as run, patch('core.macos_setup.urllib.request.urlopen') as download, patch('core.macos_setup.prepare_corefonts') as fonts:
                 prepare_wine_prefix(Path(directory), directory, {'WINEPREFIX': str(prefix)}, None)
                 run.assert_not_called()
                 download.assert_not_called()
+                fonts.assert_called_once()
 
 
 class PrefixFailureTests(unittest.TestCase):
@@ -83,6 +87,9 @@ class PrefixFailureTests(unittest.TestCase):
         migration = patch('core.macos_setup.ensure_runtime_prefix')
         migration.start()
         self.addCleanup(migration.stop)
+        fonts = patch('core.macos_setup.prepare_corefonts')
+        fonts.start()
+        self.addCleanup(fonts.stop)
 
     def test_checksum_failure_never_runs_vc_installer_or_marks_ready(self):
         with tempfile.TemporaryDirectory() as directory:

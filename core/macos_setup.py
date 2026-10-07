@@ -12,6 +12,7 @@ import urllib.request
 
 import certifi
 from core.macos_prefix import ensure_runtime_prefix
+from core.macos_fonts import prepare_corefonts
 
 
 DEFAULT_SETTINGS = {'gxResolution': '1280x800', 'gxWindow': '1', 'gxMaximize': '0'}
@@ -154,8 +155,14 @@ def restore_missing_builtins(moved):
 
 
 def prepare_wine_prefix(resources, game_dir, env, log):
-    """Установить VC++ один раз; повторить проверку DLL при каждом запуске."""
+    """Подготовить зависимости и шрифты также в существующей бутылке."""
     ensure_runtime_prefix(resources, game_dir, env, log)
+    _prepare_runtime_dependencies(resources, game_dir, env, log)
+    prepare_corefonts(resources, game_dir, env, log)
+
+
+def _prepare_runtime_dependencies(resources, game_dir, env, log):
+    """Установить VC++ один раз; повторить проверку DLL при каждом запуске."""
     prefix = Path(env['WINEPREFIX'])
     marker = prefix / '.dreamworld-vcredist-v1'
     mono = resources / 'Wine/share/wine/mono/wine-mono-10.4.1-x86.msi'

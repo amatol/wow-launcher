@@ -7,6 +7,7 @@ import subprocess
 import os
 from core.macos_setup import prepare_wine_prefix, wine_environment, native_runtime_ready
 import core.macos_setup as setup
+from core.macos_fonts import corefonts_ready, FONT_MARKER
 from core.macos_prefix import RUNTIME_ID, RUNTIME_MARKER, prefix_lock
 
 original_run = setup.run_wine_setup
@@ -34,7 +35,16 @@ with tempfile.TemporaryDirectory(prefix='dreamworld-prefix-check-') as directory
             assert not (prefix / 'old-runtime-sentinel').exists()
             assert (prefix / RUNTIME_MARKER).read_text().strip() == RUNTIME_ID
             assert native_runtime_ready(env['WINEPREFIX'])
+            assert corefonts_ready(prefix)
+            assert (prefix / FONT_MARKER).is_file()
             prepare_wine_prefix(resources, directory, env, log)
+            original_run(resources / 'Wine/bin/wine',
+                         ['reg', 'query', r'HKLM\Software\Microsoft\Windows NT\CurrentVersion\Fonts',
+                          '/v', 'Arial (TrueType)'], env, directory, log)
+            # Повреждение одного шрифта не должно скрываться успешным маркером.
+            (prefix / 'drive_c/windows/Fonts/arial.ttf').unlink()
+            prepare_wine_prefix(resources, directory, env, log)
+            assert corefonts_ready(prefix)
             probe = subprocess.run([str(resources / 'Wine/bin/wine'),
                                     str(Path(sys.argv[2]).resolve())], env=env, cwd=directory,
                                    stdout=log, stderr=log, timeout=90)

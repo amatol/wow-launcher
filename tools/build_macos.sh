@@ -10,7 +10,9 @@ Image.open('assets/launcher_icon.png').save('build/dreamworld.icns', format='ICN
 PY
 pyinstaller Dreamworld-macos.spec --noconfirm
 resources=dist/Dreamworld.app/Contents/Resources
+python tools/build_font_tools.py
 cp -R build/winecx/Wine "$resources/Wine"
+cp -R build/font-tools "$resources/Wine/font-tools"
 cp -R build/winecx/ThirdParty "$resources/ThirdParty"
 cp tools/build_winecx.sh tools/run_winecx_build.py tools/install_winecx_dependencies.sh tools/install_winecx_bottles.py tools/bundle_winecx_libraries.py "$resources/ThirdParty/"
 # Проверки не должны случайно воспользоваться исходным путём установки Wine.

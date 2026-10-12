@@ -3,8 +3,6 @@
 Показывает список аддонов с чекбоксами, версиями и описаниями.
 Позволяет выбрать и установить/обновить аддоны.
 """
-import os
-
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QScrollArea, QWidget, QCheckBox, QProgressBar, QMessageBox,
@@ -12,10 +10,9 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 
-from config import Config
 from ui.theme import STYLESHEET
 from updater.addons import (
-    fetch_addons_manifest, AddonEntry, detect_installed_version,
+    fetch_addons_manifest, AddonEntry, inspect_addon,
     install_selected,
 )
 
@@ -23,13 +20,25 @@ from updater.addons import (
 class AddonsFetchWorker(QThread):
     """Фоновая загрузка манифеста аддонов."""
 
-    fetched = pyqtSignal(list)  # список AddonEntry
+    fetched = pyqtSignal(list)
+    failed = pyqtSignal(str)
+
+    def __init__(self, parent=None, addons=None):
+        super().__init__(parent)
+        self._addons = addons
 
     def run(self):
-        addons = fetch_addons_manifest()
-        for entry in addons or []:
-            entry.installed_version = detect_installed_version(entry)
-        self.fetched.emit(addons or [])
+        try:
+            addons = self._addons if self._addons is not None else fetch_addons_manifest()
+            if addons is None:
+                raise ValueError("Не удалось загрузить список аддонов. Проверьте соединение и повторите.")
+            for entry in addons:
+                if self.isInterruptionRequested():
+                    return
+                inspect_addon(entry)
+            self.fetched.emit(addons)
+        except Exception as error:
+            self.failed.emit(f"Не удалось проверить аддоны: {error}")
 
 
 class AddonsInstallWorker(QThread):
@@ -43,17 +52,20 @@ class AddonsInstallWorker(QThread):
         self._addons = addons
 
     def run(self):
-        ok, count, errors = install_selected(
-            self._addons,
-            lambda i, total, msg: self.progress_signal.emit(i, total, msg),
-        )
-        self.finished_signal.emit(ok, count, "\n".join(errors))
+        try:
+            ok, count, errors = install_selected(
+                self._addons,
+                lambda i, total, msg: self.progress_signal.emit(i, total, msg),
+            )
+            self.finished_signal.emit(ok, count, "\n".join(errors))
+        except Exception as error:
+            self.finished_signal.emit(False, 0, str(error))
 
 
 class AddonRow(QFrame):
     """Строка аддона: чекбокс + имя + версии + описание."""
 
-    def __init__(self, entry: AddonEntry, installed_version: str = None, parent=None):
+    def __init__(self, entry: AddonEntry, parent=None):
         super().__init__(parent)
         self.entry = entry
         self.setFrameShape(QFrame.NoFrame)
@@ -74,20 +86,12 @@ class AddonRow(QFrame):
         remote_ver_label.setStyleSheet("color: #b7cedd; font-size: 14px;")
         layout.addWidget(remote_ver_label, 1, 0)
 
-        if installed_version:
-            status_label = QLabel(f"Установлено: {installed_version}")
-            if installed_version != entry.version:
-                status_label.setStyleSheet("color: #ddba7c; font-size: 14px;")
-                update_label = QLabel("Доступно обновление")
-                update_label.setStyleSheet("color: #ddba7c; font-size: 14px;")
-                layout.addWidget(update_label, 1, 1)
-            else:
-                status_label.setStyleSheet("color: #a9d6bc; font-size: 14px;")
-            layout.addWidget(status_label, 2, 0)
-        else:
-            not_installed = QLabel("Не установлен")
-            not_installed.setStyleSheet("color: #b7cedd; font-size: 14px;")
-            layout.addWidget(not_installed, 2, 0)
+        self.status_label = QLabel()
+        self.status_label.setStyleSheet("color: #b7cedd; font-size: 14px;")
+        layout.addWidget(self.status_label, 2, 0)
+        self.update_label = QLabel("Доступно обновление")
+        self.update_label.setStyleSheet("color: #ddba7c; font-size: 14px;")
+        layout.addWidget(self.update_label, 1, 1)
 
         if entry.description:
             desc_label = QLabel(entry.description)
@@ -95,15 +99,32 @@ class AddonRow(QFrame):
             desc_label.setWordWrap(True)
             layout.addWidget(desc_label, 3, 0, 1, 2)
 
-        # Выбор всегда явный: при открытии диалога все флажки сняты.
-        self.checkbox.setChecked(False)
+        self.refresh_status()
+        self.checkbox.setChecked(entry.installed)
+
+    def refresh_status(self):
+        entry = self.entry
+        if not entry.installed:
+            text = "Не установлен"
+        elif entry.installed_version:
+            text = f"Установлено: {entry.installed_version}"
+        else:
+            text = "Установлен; файлы отличаются от текущего выпуска"
+        self.status_label.setText(text)
+        self.status_label.setWordWrap(True)
+        self.update_label.setVisible(entry.update_available)
 
 
 class AddonsDialog(QDialog):
     """Диалог управления аддонами."""
 
-    def __init__(self, parent=None):
+    addons_changed = pyqtSignal(list)
+
+    def __init__(self, parent=None, auto_update=False):
         super().__init__(parent)
+        self._auto_update = auto_update
+        self._busy = False
+        self._scan_valid = False
         self.setWindowTitle("Аддоны")
         self.resize(720, 600)
         self.setMinimumSize(680, 480)
@@ -164,7 +185,13 @@ class AddonsDialog(QDialog):
         self.btn_install = QPushButton("Установить")
         self.btn_install.setFixedHeight(42)
         self.btn_install.setProperty("role", "primary")
+        self.btn_install.setStyleSheet("font-size: 14px;")
         self.btn_install.clicked.connect(self._on_install)
+
+        self.btn_retry = QPushButton("Повторить")
+        self.btn_retry.setFixedHeight(42)
+        self.btn_retry.clicked.connect(self._load_addons)
+        self.btn_retry.hide()
 
         self.btn_close = QPushButton("Закрыть")
         self.btn_close.setFixedHeight(42)
@@ -173,6 +200,7 @@ class AddonsDialog(QDialog):
         btn_layout.addWidget(self.btn_select_all)
         btn_layout.addWidget(self.btn_deselect_all)
         btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_retry)
         btn_layout.addWidget(self.btn_install)
         btn_layout.addWidget(self.btn_close)
         layout.addLayout(btn_layout)
@@ -183,32 +211,84 @@ class AddonsDialog(QDialog):
         self.setStyleSheet(STYLESHEET)
 
     def _load_addons(self):
-        self.fetch_worker = AddonsFetchWorker()
+        self._scan_addons()
+
+    def _set_busy(self, busy):
+        self._busy = busy
+        for button in (self.btn_install, self.btn_select_all, self.btn_deselect_all, self.btn_retry):
+            button.setEnabled(not busy)
+        self.btn_close.setEnabled(not busy)
+        for row in self.rows:
+            row.checkbox.setEnabled(not busy)
+
+    def _scan_addons(self, addons=None):
+        self._scan_valid = False
+        self._set_busy(True)
+        self.btn_retry.hide()
+        self.status_label.setText("Проверка установленных аддонов...")
+        self.fetch_worker = AddonsFetchWorker(self, addons=addons)
         self.fetch_worker.fetched.connect(self._on_addons_fetched)
+        self.fetch_worker.failed.connect(self._on_fetch_failed)
         self.fetch_worker.start()
 
-    def _on_addons_fetched(self, addons: list):
-        self.addons = addons
+    def _on_fetch_failed(self, message):
+        self._set_busy(False)
+        self.btn_install.setEnabled(False)
+        self.btn_retry.show()
+        self.status_label.setText(message)
 
-        # Очистить placeholder
+    def reject(self):
+        if not self._busy:
+            super().reject()
+
+    def closeEvent(self, event):
+        if self._busy:
+            event.ignore()
+        else:
+            super().closeEvent(event)
+
+    def _on_addons_fetched(self, addons: list):
+        previous_selection = {row.entry.name: row.checkbox.isChecked() for row in self.rows}
+        self.addons = addons
+        self._scan_valid = True
+        self._set_busy(False)
+
+        # Перестроить строки с актуальными статусами.
         while self.scroll_layout.count() > 0:
             item = self.scroll_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
 
-        if not addons:
-            self.status_label.setText("Аддонов не найдено или сервер недоступен.")
-            self.btn_install.setEnabled(False)
-            return
-
+        self.rows = []
         for entry in addons:
-            row = AddonRow(entry, entry.installed_version)
+            row = AddonRow(entry)
+            if entry.name in previous_selection:
+                row.checkbox.setChecked(previous_selection[entry.name])
+            row.checkbox.toggled.connect(self._refresh_action)
             self.rows.append(row)
             self.scroll_layout.addWidget(row)
 
         self.scroll_layout.addStretch()
-        self.status_label.setText(f"Доступно аддонов: {len(addons)}")
-        self.btn_install.setEnabled(True)
+        updates = sum(entry.update_available for entry in addons)
+        self.status_label.setText(
+            f"Установлено: {sum(entry.installed for entry in addons)} · Обновлений: {updates}"
+            if addons else "В каталоге пока нет аддонов."
+        )
+        self._refresh_action()
+        self.addons_changed.emit(addons)
+        if self._auto_update:
+            self._auto_update = False
+            self._install([entry for entry in addons if entry.update_available])
+
+    def _refresh_action(self):
+        pending = self._get_selected()
+        has_new = any(not entry.installed for entry in pending)
+        has_updates = any(entry.update_available for entry in pending)
+        self.btn_install.setText(
+            "Установить и обновить" if has_new and has_updates else
+            "Обновить" if has_updates else "Установить"
+        )
+        self.btn_install.setEnabled(bool(pending) and not self._busy and self._scan_valid)
 
     def _select_all(self):
         for row in self.rows:
@@ -219,17 +299,16 @@ class AddonsDialog(QDialog):
             row.checkbox.setChecked(False)
 
     def _get_selected(self) -> list:
-        return [row.entry for row in self.rows if row.checkbox.isChecked()]
+        return [row.entry for row in self.rows if row.checkbox.isChecked()
+                and (not row.entry.installed or row.entry.update_available)]
 
     def _on_install(self):
-        selected = self._get_selected()
-        if not selected:
-            QMessageBox.information(self, "Аддоны", "Выберите хотя бы один аддон.")
-            return
+        self._install(self._get_selected())
 
-        self.btn_install.setEnabled(False)
-        self.btn_select_all.setEnabled(False)
-        self.btn_deselect_all.setEnabled(False)
+    def _install(self, selected):
+        if not selected or self._busy or not self._scan_valid:
+            return
+        self._set_busy(True)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
         self.status_label.setText("Установка аддонов...")
@@ -247,9 +326,6 @@ class AddonsDialog(QDialog):
 
     def _on_install_finished(self, success: bool, count: int, error: str):
         self.progress_bar.setVisible(False)
-        self.btn_install.setEnabled(True)
-        self.btn_select_all.setEnabled(True)
-        self.btn_deselect_all.setEnabled(True)
         if success:
             self.status_label.setText(f"Установлено аддонов: {count}")
         else:
@@ -257,8 +333,5 @@ class AddonsDialog(QDialog):
             self.status_label.setText(f"Установлено {count} из выбранных")
             QMessageBox.warning(self, "Ошибка установки аддонов", details)
 
-        # Обновить статусы строк
-        for row in self.rows:
-            ver = detect_installed_version(row.entry)
-            if ver == row.entry.version:
-                row.checkbox.setChecked(False)
+        # После частичного сбоя также сверяем файлы, сохраняя выбор игрока.
+        self._scan_addons(self.addons)

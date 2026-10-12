@@ -19,7 +19,7 @@ def metadata(path, url, version):
     content = path.read_bytes()
     return {'version': version, 'download_url': url, 'size': len(content),
             'sha256': hashlib.sha256(content).hexdigest(),
-            'changelog': 'macOS: исправлена обработка инструкции ARPL в Wine CrossOver при работе Warden. Бутылка CrossOver 26.3.0 сохраняется.'}
+            'changelog': 'Автоматическое определение установленных аддонов и обновление кнопкой «Обновить Аддоны». macOS: автоматическая установка Microsoft corefonts.'}
 
 
 def atomic_json(path, data):
@@ -92,7 +92,7 @@ def main():
     os.replace(temporary, args.client / 'Dreamworld.exe')
     atomic_json(public / 'launcher_manifest.json', launchers['windows'])
     atomic_json(public / 'launcher_manifest_macos.json', launchers['macos'])
-    previous['version'] = version
+    # Игровые файлы не меняются: дата клиента независима от выпуска лаунчера.
     previous['launchers'] = launchers
     atomic_json(public / 'manifest.json', previous)
     # Удаление допустимо только после полной публикации обоих манифестов.

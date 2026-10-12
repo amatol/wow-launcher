@@ -31,6 +31,8 @@ class AddonEntry:
     files: List[AddonFile] = field(default_factory=list)
     size: int = 0
     installed_version: Optional[str] = None
+    installed: bool = False
+    update_available: bool = False
 
 
 ProgressCallback = Callable[[int, int, str], None]
@@ -127,7 +129,8 @@ def load_addons_state() -> dict:
     if os.path.isfile(Config.ADDONS_STATE_FILE):
         try:
             with open(Config.ADDONS_STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                state = json.load(f)
+                return state if isinstance(state, dict) else {}
         except Exception:
             pass
     return {}
@@ -175,7 +178,23 @@ def detect_installed_version(entry: AddonEntry) -> Optional[str]:
 
 
 def is_addon_installed(entry: AddonEntry) -> bool:
-    return all(os.path.isdir(os.path.join(Config.ADDONS_DIR, folder)) for folder in entry.folders)
+    """Распознать в том числе ручную или неполную установку пакета."""
+    for folder in entry.folders:
+        path = os.path.join(Config.ADDONS_DIR, folder)
+        try:
+            with os.scandir(path) as children:
+                if any(item.is_file() and item.name.lower().endswith(".toc") for item in children):
+                    return True
+        except FileNotFoundError:
+            continue
+    return False
+
+
+def inspect_addon(entry: AddonEntry) -> None:
+    """Проверить наличие отдельно от совпадения опубликованных файлов."""
+    entry.installed = is_addon_installed(entry)
+    entry.installed_version = detect_installed_version(entry) if entry.installed else None
+    entry.update_available = entry.installed and entry.installed_version != entry.version
 
 
 def needs_update(entry: AddonEntry) -> bool:

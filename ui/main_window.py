@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QMessageBox,
     QProgressBar, QDialog, QApplication, QFrame
 )
-from PyQt5.QtCore import QSettings, QThread, pyqtSignal, Qt, QUrl
+from PyQt5.QtCore import QSettings, QThread, QTimer, pyqtSignal, Qt, QUrl
 from PyQt5.QtGui import QDesktopServices
 
 from config import Config
@@ -25,7 +25,7 @@ from updater.manifest import (
 from updater.http_updater import HTTPUpdater
 from updater.bootstrap import BootstrapInstaller
 from ui.widgets import NewsWidget, NewsWorker, ProgressWidget
-from ui.addons_dialog import AddonsDialog
+from ui.addons_dialog import AddonsDialog, AddonsFetchWorker
 from ui.theme import STYLESHEET, LandscapeWidget, load_display_font
 
 
@@ -295,6 +295,9 @@ class MainWindow(QMainWindow):
         self.self_update_dialog = None
         self.news_worker = None
         self.check_worker = None
+        self.addons_check_worker = None
+        self.addons_dialog = None
+        self._addons_have_updates = False
 
         self._apply_dark_theme()
 
@@ -386,6 +389,11 @@ class MainWindow(QMainWindow):
 
         # Фоновая проверка обновлений лаунчера (тихая)
         self._start_self_update_check()
+        self._start_addons_check()
+        self.addons_timer = QTimer(self)
+        self.addons_timer.setInterval(5 * 60 * 1000)
+        self.addons_timer.timeout.connect(self._start_addons_check)
+        self.addons_timer.start()
 
     def _apply_dark_theme(self):
         self.setStyleSheet(STYLESHEET)
@@ -432,6 +440,14 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self.launch_worker and self.launch_worker.isRunning():
+            event.ignore()
+            return
+        if self.addons_check_worker and self.addons_check_worker.isRunning():
+            # Закрыть окно сразу, но не уничтожать QThread внутри сетевого запроса.
+            self.addons_timer.stop()
+            self.addons_check_worker.requestInterruption()
+            self.addons_check_worker.finished.connect(self.close)
+            self.hide()
             event.ignore()
             return
         settings = QSettings()
@@ -495,6 +511,7 @@ class MainWindow(QMainWindow):
         self.progress_widget.set_status("Проверка файлов...", 0)
         self.btn_play.setVisible(False)
         self.btn_cancel.setVisible(True)
+        self.btn_addons.setEnabled(False)
 
         self.worker = UpdateWorker(Config.GAME_DIR, Config.MANIFEST_URL)
         self.worker.log_signal.connect(self._on_log_msg)
@@ -516,6 +533,8 @@ class MainWindow(QMainWindow):
             message, 100 if success else 0
         )
         self.btn_cancel.setVisible(False)
+        self.btn_addons.setEnabled(True)
+        self._start_addons_check()
         if success and self.worker and self.worker.installed_base_client:
             # Do not expose Play between bootstrap extraction and a fresh
             # check of the files now present on disk.  If that check finds
@@ -579,9 +598,40 @@ class MainWindow(QMainWindow):
         else:
             self.close()
 
+    def _start_addons_check(self):
+        if self.addons_check_worker and self.addons_check_worker.isRunning():
+            return
+        if self.addons_dialog and self.addons_dialog.isVisible():
+            return
+        if self.worker and self.worker.isRunning():
+            return
+        self.addons_check_worker = AddonsFetchWorker(self)
+        self.addons_check_worker.fetched.connect(self._on_addons_checked)
+        self.addons_check_worker.failed.connect(self._on_addons_check_failed)
+        self.addons_check_worker.start()
+
+    def _on_addons_checked(self, addons):
+        self._addons_have_updates = any(entry.update_available for entry in addons)
+        self.btn_addons.setText("Обновить Аддоны" if self._addons_have_updates else "Аддоны")
+        self.btn_addons.setToolTip(
+            "Обновить установленные аддоны" if self._addons_have_updates else
+            "Выбрать и установить аддоны"
+        )
+
+    def _on_addons_check_failed(self, message):
+        # Сетевая ошибка не означает, что ранее найденные обновления исчезли.
+        self.btn_addons.setToolTip(message)
+
     def open_addons(self):
-        dialog = AddonsDialog(self)
-        dialog.exec_()
+        if (self.addons_check_worker and self.addons_check_worker.isRunning()
+                and not self.addons_check_worker.isInterruptionRequested()):
+            # Не позволять старой фоновой проверке перезаписать результат установки.
+            self.addons_check_worker.fetched.disconnect(self._on_addons_checked)
+            self.addons_check_worker.failed.disconnect(self._on_addons_check_failed)
+            self.addons_check_worker.requestInterruption()
+        self.addons_dialog = AddonsDialog(self, auto_update=self._addons_have_updates)
+        self.addons_dialog.addons_changed.connect(self._on_addons_checked)
+        self.addons_dialog.exec_()
 
     def open_account(self):
         dialog = QDialog(self)

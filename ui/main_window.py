@@ -29,18 +29,6 @@ from ui.addons_dialog import AddonsDialog, AddonsFetchWorker
 from ui.theme import STYLESHEET, LandscapeWidget, load_display_font
 
 
-class GameLaunchWorker(QThread):
-    """Подготовка Wine и запуск игры без блокировки окна."""
-    error = None
-
-    def run(self):
-        try:
-            if not launch_wow():
-                raise RuntimeError("Не удалось запустить Wow.exe")
-        except Exception as error:
-            self.error = str(error)
-
-
 class CheckWorker(QThread):
     """Фоновая проверка наличия обновлений клиента при запуске."""
 
@@ -566,16 +554,6 @@ class MainWindow(QMainWindow):
         if not check_wow_executable():
             QMessageBox.warning(self, "Ошибка", "Wow.exe не найден в папке лаунчера!")
             return
-        if sys.platform == "darwin":
-            if self.launch_worker and self.launch_worker.isRunning():
-                return
-            self.progress_widget.set_status("Подготовка WoW… При первом запуске устанавливается Visual C++.", -1)
-            self.btn_play.setEnabled(False)
-            self.btn_addons.setEnabled(False)
-            self.launch_worker = GameLaunchWorker(self)
-            self.launch_worker.finished.connect(self._game_launch_finished)
-            self.launch_worker.start()
-            return
         self.progress_widget.set_status("Запуск WoW...", -1)
         try:
             if not launch_wow():
@@ -585,18 +563,6 @@ class MainWindow(QMainWindow):
             self.progress_widget.set_status("Не удалось запустить WoW.", -1)
             return
         self.close()
-
-    def _game_launch_finished(self):
-        error = self.launch_worker.error
-        self.launch_worker.deleteLater()
-        self.launch_worker = None
-        self.btn_play.setEnabled(True)
-        self.btn_addons.setEnabled(True)
-        if error:
-            QMessageBox.warning(self, "Ошибка запуска", error)
-            self.progress_widget.set_status("Не удалось запустить WoW. Можно повторить попытку.", -1)
-        else:
-            self.close()
 
     def _start_addons_check(self):
         if self.addons_check_worker and self.addons_check_worker.isRunning():

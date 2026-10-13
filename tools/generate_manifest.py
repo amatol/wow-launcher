@@ -48,7 +48,7 @@ def build_manifest(source: Path, version: str, base_url: str, previous: dict = N
     manifest = {"version": version, "files": files}
     if previous is not None:
         if "launchers" in previous:
-            manifest["launchers"] = previous["launchers"]
+            manifest["launchers"] = {k: v for k, v in previous["launchers"].items() if k == "windows"}
         current_paths = {entry["path"] for entry in files}
         previous_paths = {entry["path"] for entry in previous.get("files", [])}
         # Tombstones must survive subsequent releases.  A client can skip any

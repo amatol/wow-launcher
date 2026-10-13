@@ -6,16 +6,9 @@ import os
 import sys
 
 
-def app_bundle_path(executable=None):
-    executable = os.path.abspath(executable or sys.executable)
-    candidate = os.path.dirname(os.path.dirname(os.path.dirname(executable)))
-    return candidate if candidate.endswith(".app") else None
-
-
 def game_directory():
     if getattr(sys, "frozen", False):
-        bundle = app_bundle_path() if sys.platform == "darwin" else None
-        return os.path.dirname(bundle or sys.executable)
+        return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
 
@@ -64,13 +57,13 @@ class Config:
 
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
-    LAUNCHER_VERSION = "20261012"
+    LAUNCHER_VERSION = "20261013"
 
     # URL манифеста обновлений лаунчера (JSON)
-    LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/" + ("launcher_manifest_macos.json" if sys.platform == "darwin" else "launcher_manifest.json")
+    LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"
 
     # Имя .exe файла лаунчера
-    LAUNCHER_EXE_NAME = "Dreamworld.app.zip" if sys.platform == "darwin" else "Dreamworld.exe"
+    LAUNCHER_EXE_NAME = "Dreamworld.exe"
 
     @classmethod
     def detect_wow_exe(cls):

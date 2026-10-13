@@ -24,9 +24,6 @@ def launch_wow(exe_path: str = None) -> bool:
 
     if sys.platform == "win32":
         os.startfile(exe)
-    elif sys.platform == "darwin":
-        from core.macos import launch_wow_macos
-        launch_wow_macos(exe, Config.GAME_DIR)
     else:
         subprocess.Popen([exe], cwd=Config.GAME_DIR)
     return True

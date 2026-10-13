@@ -31,18 +31,6 @@ def main():
     app.setOrganizationDomain("wotlk.amatol.blog")
 
     if "--smoke-test" in sys.argv:
-        # Проверка упакованного Qt и встроенного Wine без подключения к серверу.
-        from config import app_bundle_path
-        import subprocess
-        bundle = app_bundle_path()
-        if bundle and sys.platform == "darwin":
-            resources = os.path.join(bundle, "Contents", "Resources")
-            assert Config.GAME_DIR == os.path.dirname(bundle)
-            from pathlib import Path
-            from core.macos_setup import wine_environment
-            env = wine_environment(Path(resources), Config.GAME_DIR)
-            subprocess.run([os.path.join(resources, "Wine", "bin", "wine"), "--version"],
-                           env=env, check=True, timeout=30)
         print("Dreamworld smoke test OK", Config.LAUNCHER_VERSION, flush=True)
         return
 
@@ -54,12 +42,11 @@ def main():
     # Очистка мусора от прошлых обновлений
     cleanup_self_update_files()
 
-    if sys.platform == "darwin" and Config.detect_wow_exe():
-        from core.macos_setup import prepare_game_config
-        try:
-            prepare_game_config(Config.GAME_DIR)
-        except Exception as error:
-            QMessageBox.warning(None, "Настройки WoW", f"Не удалось подготовить настройки игры: {error}")
+    from core.launcher_bundle import cleanup_retired_macos
+    try:
+        cleanup_retired_macos(Config.GAME_DIR)
+    except OSError as error:
+        QMessageBox.warning(None, "Очистка macOS", f"Не удалось удалить старые компоненты macOS: {error}. Закройте использующие их программы и повторите запуск лаунчера.")
 
     window = MainWindow()
     window.show()

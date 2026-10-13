@@ -47,6 +47,8 @@ def build_plan(public, backup_root, keep=3):
     snapshots = {}
     for name in MANIFESTS:
         path = public / name
+        if name == 'launcher_manifest_macos.json' and not path.exists():
+            continue
         content = path.read_bytes()
         snapshots[str(path)] = hashlib.sha256(content).hexdigest()
         manifest = json.loads(content)

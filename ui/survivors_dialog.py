@@ -35,6 +35,8 @@ class SurvivorsWorker(QThread):
             # После долгой установки пароль мог измениться, а аккаунт — быть заблокирован.
             if time.monotonic() - checked_at > 60:
                 self.progress.emit('Повторная проверка аккаунта перед запуском…', -1)
+                if self.token:
+                    raise AuthError('Файлы готовы. Введите пароль и новый код аутентификатора, затем нажмите «Войти и играть».')
                 username = authenticate(self.username, self.password, Config.AUTH_HOST, Config.AUTH_PORT, token=self.token)
             if self.isInterruptionRequested():
                 raise Cancelled('Запуск отменён.')

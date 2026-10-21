@@ -12,6 +12,7 @@ import struct
 
 N = int('894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7', 16)
 G = 7
+LATIN_UPPER = str.maketrans('abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
 
 class AuthError(Exception):
@@ -79,14 +80,13 @@ def authenticate(username, password, host, port=3724, timeout=12, token=''):
     """Выполнить только вход, не подключаясь к игровому миру."""
     if not isinstance(username, str) or not isinstance(password, str):
         raise AuthError('Введите логин и пароль.')
-    username = username.strip().upper()
+    username = username.strip().translate(LATIN_UPPER)
     if not 1 <= len(username) <= 32 or not 1 <= len(password) <= 32:
         raise AuthError('Введите логин и пароль длиной до 32 символов.')
-    try:
-        user = username.encode('ascii')
-        secret = password.upper().encode('ascii')
-    except UnicodeError:
-        raise AuthError('Используйте латинские символы в логине и пароле.') from None
+    user = username.encode('utf-8')
+    secret = password.translate(LATIN_UPPER).encode('utf-8')
+    if len(user) > 32:
+        raise AuthError('Логин слишком длинный.')
     body = (b'WoW\x00' + bytes((3, 3, 5)) + struct.pack('<H', 12340)
             + b'68x\x00' + b'niW\x00' + b'URur' + bytes(8) + bytes((len(user),)) + user)
     try:

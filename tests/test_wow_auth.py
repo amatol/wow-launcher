@@ -23,7 +23,7 @@ def read(sock, size):
 
 
 class WowAuthTests(unittest.TestCase):
-    def exchange(self, password='Password1', tamper=False, challenge_result=0, flags=0, token=''):
+    def exchange(self, password='Password1', tamper=False, challenge_result=0, flags=0, token='', server_password='PASSWORD1'):
         client, server = socket.socketpair()
         errors = []
         packets = []
@@ -43,7 +43,7 @@ class WowAuthTests(unittest.TestCase):
                         return
                     salt = bytes(range(32))
                     b = 123456789
-                    x = int.from_bytes(sha(salt, sha(b'TESTUSER:PASSWORD1')), 'little')
+                    x = int.from_bytes(sha(salt, sha(('TESTUSER:' + server_password).encode('utf-8'))), 'little')
                     v = pow(G, x, N)
                     public_b = ((3 * v + pow(G, b, N)) % N).to_bytes(32, 'little')
                     challenge = (bytes(3) + public_b + bytes((1, G, 32))
@@ -105,6 +105,9 @@ class WowAuthTests(unittest.TestCase):
 
     def test_authenticator(self):
         self.assertEqual(self.exchange(flags=4, token='123456'), 'TESTUSER')
+
+    def test_password_preserves_non_latin_case_as_azerothcore_does(self):
+        self.assertEqual(self.exchange(password='Парольéabc', server_password='ПарольéABC'), 'TESTUSER')
 
     def test_leading_zero_shared_secret(self):
         shared = b'\0\0' + bytes(range(2, 32))

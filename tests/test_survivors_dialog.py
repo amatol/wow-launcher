@@ -54,6 +54,15 @@ class SurvivorsDialogTests(unittest.TestCase):
         self.assertFalse(dialog.play.isEnabled())
         dialog.worker.password = ''
 
+    def test_long_install_requests_fresh_authenticator_instead_of_reusing_code(self):
+        worker = SurvivorsWorker('user', 'secret', '123456', '/tmp/unused')
+        with patch('ui.survivors_dialog.authenticate', return_value='USER') as auth, patch('ui.survivors_dialog.SurvivorsInstaller'), patch('ui.survivors_dialog.time.monotonic', side_effect=[0, 61]):
+            worker.run()
+        auth.assert_called_once()
+        self.assertIsNone(worker.result)
+        self.assertIn('новый код', worker.error)
+        self.assertEqual(worker.password, '')
+
     def test_cancel_running_worker_keeps_dialog_alive_until_finished(self):
         dialog = SurvivorsDialog()
         self.addCleanup(dialog.deleteLater)

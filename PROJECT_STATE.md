@@ -1,5 +1,33 @@
 # Состояние Dreamworld Launcher
 
+## Warcraft Survivors опубликован в лаунчере 20261021 — 21.10.2026
+
+- Реализация 00e6b7bfcf03526431ecde855b14359a500ac9ec, Windows CI
+  39569877059 success; 110 тестов, 2 POSIX skips. Локально 110 PASS.
+- Отдельная кнопка, вход с текущими аккаунтами SRP6/M2, UTF-8/TOTP,
+  пароль не сохраняется; отдельная установка и локальные профили.
+- Игра upstream survivors/7c6c848d5c78e2adeaaf9f3b7715fe106e2c0a98,
+  CI 39565218325 success, release без dev. 19 файлов/5539091176 байт,
+  включая данные 1.12.1 и app-local VCRUNTIME140.dll. Клиент WotLK не меняется.
+- Настоящий установщик скачал весь режим через HTTPS, проверены все хэши
+  и Range-продолжение EXE с 4096 байт. Windows loader CI 39569531071 PASS;
+  Windows c настоящими данными CI 39570187251 PASS: 40 секунд, 44 карты
+  Map.dbc, без паник, меню без боя. Software DX12; физическая GPU не проверена.
+- Публикация: PYTHONPATH=. .venv/bin/python tools/publish_launchers.py
+  dist/release-20261021/runtime-windows/Dreamworld.exe
+  --backup /var/backups/wowserver/launchers-20261021.
+- EXE 41534961 байт, SHA-256
+  2d0f2126c4a8cbe793f65e4c3279799f4a76de3a7bd0199e8d91b70e7bccccb4.
+  Публичные alias/release и установленный EXE совпали по полному SHA-256.
+  Манифесты проверены по HTTPS. Дата клиента осталась 20261017,
+  его файлы/поля кроме launchers неизменны. Сервер и службы не обновлялись.
+- Ротация оставила Windows 20261021/20261013/20261012. Пользовательский
+  amatol.PNG сохранён. Отчёт /root/wowserver/reports/survivors-publication-20261021.json.
+- Игроку перезапустить лаунчер и принять обновление, затем Warcraft Survivors,
+  действующий логин/пароль, первая загрузка около 5.5 ГБ. Интерфейс игры English;
+  полноценный игровой прогон на физической Windows/GPU остаётся ручной проверкой.
+
+
 ## Окончательный Warcraft Survivors launcher — 21.10.2026
 
 - main/c3aa396: SRP6 с нормализацией только латиницы, UTF-8 пароли,

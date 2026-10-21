@@ -12,7 +12,7 @@ from core.survivors import SurvivorsInstaller, Cancelled, validate_manifest, lau
 
 
 def sample():
-    files = {'warcraft-survivors.exe': b'MZgame', 'Data/terrain.MPQ': b'terrain', 'Data/patch.MPQ': b'patch'}
+    files = {'warcraft-survivors.exe': b'MZgame', 'VCRUNTIME140.dll': b'MZruntime', 'Data/terrain.MPQ': b'terrain', 'Data/patch.MPQ': b'patch'}
     return files, {'version': '20261021', 'files': [
         {'path': path, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
          'http_url': Config.SURVIVORS_BASE_URL + '/releases/20261021/files/' + path}
@@ -78,7 +78,7 @@ class SurvivorsTests(unittest.TestCase):
         session.get.side_effect = [meta]
         with patch('core.survivors.requests.Session', return_value=session):
             self.installer.install()
-        self.assertEqual(session.get.call_count, 5)
+        self.assertEqual(session.get.call_count, 6)
 
     def test_resume_partial_and_validate_range(self):
         self.installer.root.mkdir()

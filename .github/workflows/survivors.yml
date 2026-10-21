@@ -37,6 +37,11 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path package
           Copy-Item target/release/warcraft-survivors.exe package/
+          $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+          $visualStudio = & $vswhere -latest -property installationPath
+          $runtime = Get-ChildItem (Join-Path $visualStudio 'VC/Redist/MSVC') -Filter vcruntime140.dll -Recurse | Where-Object { $_.FullName -match '\\x64\\Microsoft\.VC\d+\.CRT\\' } | Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $runtime) { throw 'Microsoft x64 app-local runtime not found' }
+          Copy-Item $runtime.FullName package/VCRUNTIME140.dll
           Copy-Item LICENSE-MIT,LICENSE-APACHE package/
           git rev-parse HEAD | Out-File -Encoding ascii package/UPSTREAM_REVISION.txt
       - uses: actions/upload-artifact@v4

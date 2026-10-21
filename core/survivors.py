@@ -22,7 +22,7 @@ def validate_manifest(data):
     if manifest.removed_files or not 3 <= len(manifest.files) <= 40:
         raise ValueError('Некорректный состав файлов Warcraft Survivors.')
     names = set()
-    allowed = {'warcraft-survivors.exe', 'LICENSE-MIT', 'LICENSE-APACHE', 'UPSTREAM_REVISION.txt'}
+    allowed = {'warcraft-survivors.exe', 'VCRUNTIME140.dll', 'LICENSE-MIT', 'LICENSE-APACHE', 'UPSTREAM_REVISION.txt'}
     base = urlsplit(Config.SURVIVORS_BASE_URL)
     for entry in manifest.files:
         if entry.path not in allowed and not re.fullmatch(r'Data/[A-Za-z0-9_.-]+\.[Mm][Pp][Qq]', entry.path):
@@ -35,7 +35,7 @@ def validate_manifest(data):
                 or not url.path.startswith(base.path.rstrip('/') + '/')
                 or url.username or url.password or url.query or url.fragment):
             raise ValueError('Недопустимый источник файлов Warcraft Survivors.')
-    if not {'warcraft-survivors.exe', 'data/terrain.mpq', 'data/patch.mpq'} <= names:
+    if not {'warcraft-survivors.exe', 'vcruntime140.dll', 'data/terrain.mpq', 'data/patch.mpq'} <= names:
         raise ValueError('В манифесте нет обязательных файлов режима.')
     if sum(entry.size for entry in manifest.files) > 16 * 1024**3:
         raise ValueError('Некорректный размер установки.')

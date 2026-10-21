@@ -1,0 +1,45 @@
+name: Build Warcraft Survivors Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  survivors:
+    name: Warcraft Survivors Windows
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - name: Checkout pinned Warcraft Survivors
+        uses: actions/checkout@v4
+        with:
+          repository: AdamMcWilliam/warcraft-survivors
+          ref: 7c6c848d5c78e2adeaaf9f3b7715fe106e2c0a98
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal
+          rustc --version
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: survivors-windows-player
+      - name: Build portable player executable
+        shell: pwsh
+        run: cargo build --locked --release --no-default-features -p warcraft-survivors
+      - name: Package executable and licenses
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path package
+          Copy-Item target/release/warcraft-survivors.exe package/
+          Copy-Item LICENSE-MIT,LICENSE-APACHE package/
+          git rev-parse HEAD | Out-File -Encoding ascii package/UPSTREAM_REVISION.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Warcraft-Survivors-windows
+          path: package/

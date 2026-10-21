@@ -45,7 +45,7 @@ def validate_manifest(data):
 class SurvivorsInstaller:
     def __init__(self, game_dir, progress=None, cancelled=None):
         self.parent = Path(game_dir).resolve()
-        self.root = self.parent / 'WarcraftSurvivors'
+        self.root = self.parent / 'Survivors'
         self.progress = progress or (lambda message, percent: None)
         self.cancelled = cancelled or (lambda: False)
 
@@ -56,11 +56,31 @@ class SurvivorsInstaller:
     def _safe(self, relative):
         target = self.root / relative
         # Запрещены в том числе Windows junction, ведущие из установки наружу.
-        if self.root.is_symlink() or self.root.resolve() != self.parent / 'WarcraftSurvivors':
-            raise ValueError('Папка WarcraftSurvivors не должна быть ссылкой на другой каталог.')
+        if self.root.is_symlink() or self.root.resolve() != self.parent / 'Survivors':
+            raise ValueError('Папка Survivors не должна быть ссылкой на другой каталог.')
         if target.resolve() != self.root / relative:
             raise ValueError('В папке режима обнаружена ссылка. Выберите обычный каталог.')
         return target
+
+    def _migrate_legacy_directory(self):
+        """Перенести всю прежнюю установку, включая профили и недокачанные части."""
+        legacy = self.parent / 'WarcraftSurvivors'
+        if legacy.is_symlink() or legacy.resolve() != self.parent / 'WarcraftSurvivors':
+            raise ValueError('Прежняя папка WarcraftSurvivors не должна быть ссылкой на другой каталог.')
+        if not legacy.exists():
+            return
+        if not legacy.is_dir():
+            raise ValueError('Путь WarcraftSurvivors занят файлом. Освободите имя папки и повторите запуск.')
+        if self.root.exists():
+            if not self.root.is_dir() or any(self.root.iterdir()):
+                raise ValueError('Найдены обе папки: Survivors и WarcraftSurvivors. Обратитесь к администратору для переноса без потери данных.')
+            self.root.rmdir()  # Только пустая папка; чужие файлы не заменяем.
+        self._check()
+        self.progress('Перенос скачанных файлов в папку Survivors…', -1)
+        try:
+            legacy.rename(self.root)
+        except OSError:
+            raise OSError('Не удалось перенести папку режима. Закройте игру и прежний лаунчер, затем повторите запуск.') from None
 
     def _digest(self, path):
         digest = hashlib.sha256()
@@ -73,6 +93,7 @@ class SurvivorsInstaller:
     def install(self):
         self._check()
         self._safe('Data')
+        self._migrate_legacy_directory()
         self.root.mkdir(parents=True, exist_ok=True)
         self.progress('Проверка обновлений Warcraft Survivors…', -1)
         with requests.Session() as session:

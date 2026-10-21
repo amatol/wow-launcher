@@ -80,6 +80,65 @@ class SurvivorsTests(unittest.TestCase):
             self.installer.install()
         self.assertEqual(session.get.call_count, 6)
 
+    def test_mode_uses_survivors_directory(self):
+        self.assertEqual(self.installer.root, self.parent / 'Survivors')
+
+    def test_migration_preserves_profiles_and_resumes_partial_without_redownloading_data(self):
+        legacy = self.parent / 'WarcraftSurvivors'
+        (legacy / 'Data').mkdir(parents=True)
+        for path, data in self.files.items():
+            if path != 'warcraft-survivors.exe':
+                (legacy / path).write_bytes(data)
+        profile = legacy / 'profiles' / 'account' / 'config.toml'
+        profile.parent.mkdir(parents=True)
+        profile.write_text('personal-settings')
+        entry = validate_manifest(self.data).files[0]
+        (legacy / '.downloads').mkdir()
+        (legacy / '.downloads' / (entry.sha256 + '.part')).write_bytes(b'MZ')
+        before = (legacy / 'Data/terrain.MPQ').stat().st_ino
+        meta = response(); meta.json.return_value = self.data
+        session = MagicMock(); session.__enter__.return_value = session
+        session.get.side_effect = [meta, response(b'game', 206, {'Content-Range': 'bytes 2-5/6'})]
+        with patch('core.survivors.requests.Session', return_value=session):
+            root = self.installer.install()
+        self.assertEqual(root, self.parent / 'Survivors')
+        self.assertFalse(legacy.exists())
+        self.assertEqual((root / 'profiles/account/config.toml').read_text(), 'personal-settings')
+        self.assertEqual((root / 'Data/terrain.MPQ').stat().st_ino, before)
+        self.assertEqual((root / 'warcraft-survivors.exe').read_bytes(), b'MZgame')
+        self.assertEqual(session.get.call_count, 2)
+        self.assertEqual(session.get.call_args.kwargs['headers']['Range'], 'bytes=2-')
+
+    def test_migration_does_not_overwrite_two_nonempty_directories(self):
+        legacy = self.parent / 'WarcraftSurvivors'; legacy.mkdir()
+        (legacy / 'keep.txt').write_text('old-data')
+        self.installer.root.mkdir()
+        (self.installer.root / 'keep.txt').write_text('new-data')
+        with self.assertRaisesRegex(ValueError, 'обе папки'):
+            self.installer.install()
+        self.assertEqual((legacy / 'keep.txt').read_text(), 'old-data')
+        self.assertEqual((self.installer.root / 'keep.txt').read_text(), 'new-data')
+
+    def test_migration_accepts_empty_target_and_preserves_locked_source(self):
+        legacy = self.parent / 'WarcraftSurvivors'; legacy.mkdir()
+        (legacy / 'keep.txt').write_text('data')
+        self.installer.root.mkdir()
+        with patch.object(Path, 'rename', side_effect=PermissionError('locked')):
+            with self.assertRaisesRegex(OSError, 'Закройте игру'):
+                self.installer.install()
+        self.assertEqual((legacy / 'keep.txt').read_text(), 'data')
+        self.installer._migrate_legacy_directory()
+        self.assertEqual((self.installer.root / 'keep.txt').read_text(), 'data')
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX symlink fixture')
+    def test_legacy_symlink_is_not_moved(self):
+        external = self.parent / 'external'; external.mkdir()
+        (self.parent / 'WarcraftSurvivors').symlink_to(external, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, 'ссылкой'):
+            self.installer.install()
+        self.assertTrue(external.exists())
+        self.assertFalse(self.installer.root.exists())
+
     def test_resume_partial_and_validate_range(self):
         self.installer.root.mkdir()
         entry = validate_manifest(self.data).files[0]

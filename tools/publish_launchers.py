@@ -17,7 +17,7 @@ def metadata(path, url, version):
     content = path.read_bytes()
     return {'version': version, 'download_url': url, 'size': len(content),
             'sha256': hashlib.sha256(content).hexdigest(),
-            'changelog': 'Добавлен отдельный режим Warcraft Survivors: вход с аккаунтом Dreamworld, установка и запуск из лаунчера.'}
+            'changelog': 'Режим устанавливается в папку Survivors. Прежние файлы, профили и недокачанные части переносятся автоматически.'}
 
 
 def atomic_json(path, data):
@@ -32,10 +32,16 @@ def main():
     parser.add_argument('--public', type=Path, default=Path('/srv/dreamworld-launcher'))
     parser.add_argument('--client', type=Path, default=Path('/opt/azerothcore/client'))
     parser.add_argument('--backup', type=Path, required=True)
+    parser.add_argument('--version', help='Явная дата версии YYYYMMDD; только для согласованного исключения')
     args = parser.parse_args()
-    version = datetime.now(ZoneInfo('Europe/Moscow')).strftime('%Y%m%d')
+    version = args.version or datetime.now(ZoneInfo('Europe/Moscow')).strftime('%Y%m%d')
+    try:
+        if len(version) != 8 or datetime.strptime(version, '%Y%m%d').strftime('%Y%m%d') != version:
+            raise ValueError
+    except ValueError:
+        parser.error('Версия должна иметь формат YYYYMMDD и быть календарной датой')
     if Config.LAUNCHER_VERSION != version:
-        parser.error('Нужно пересобрать лаунчеры с сегодняшней датой публикации')
+        parser.error('Нужно пересобрать лаунчер с выбранной датой версии')
     public = args.public
     previous = json.loads((public / 'manifest.json').read_text())
     old_launcher = json.loads((public / 'launcher_manifest.json').read_text())

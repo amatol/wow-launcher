@@ -34,7 +34,7 @@ class SurvivorsTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.parent = Path(self.temp.name)
+        self.parent = Path(self.temp.name).resolve()
         self.installer = SurvivorsInstaller(self.parent)
         self.files, self.data = sample()
 

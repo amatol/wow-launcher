@@ -1,0 +1,52 @@
+name: Verify Warcraft Survivors Windows loader
+
+on:
+  workflow_dispatch:
+    inputs:
+      game_run:
+        description: Successful Warcraft Survivors build run ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  loader:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Warcraft-Survivors-windows
+          run-id: ${{ inputs.game_run }}
+          github-token: ${{ github.token }}
+          path: game
+      - name: Verify native Windows loader without game data
+        shell: pwsh
+        run: |
+          $env:WOW_DATA = ''
+          $env:WOW_NOSOUND = '1'
+          $env:WOW_UNATTENDED = '1'
+          $env:WOW_BG = '1'
+          $env:BENILLA_HOME = Join-Path $env:RUNNER_TEMP 'survivors-loader-state'
+          $output = Join-Path $env:RUNNER_TEMP 'survivors-stdout.txt'
+          $errors = Join-Path $env:RUNNER_TEMP 'survivors-stderr.txt'
+          $exe = (Resolve-Path 'game/warcraft-survivors.exe').Path
+          $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru -RedirectStandardOutput $output -RedirectStandardError $errors
+          Start-Sleep -Seconds 8
+          $text = (Get-Content $output -Raw -ErrorAction SilentlyContinue) + (Get-Content $errors -Raw -ErrorAction SilentlyContinue)
+          if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+          $text | Write-Output
+          if ($text -notmatch 'executor: PostUpdate' -or $text -notmatch 'no WoW install found') {
+            throw 'The executable did not reach native engine startup. Check DLLs and loader output.'
+          }
+          'WINDOWS_NATIVE_LOADER: PASS (no game data; gameplay and GPU compatibility are not tested)'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Warcraft-Survivors-loader-logs
+          path: |
+            ${{ runner.temp }}/survivors-stdout.txt
+            ${{ runner.temp }}/survivors-stderr.txt

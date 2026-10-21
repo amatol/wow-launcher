@@ -5,12 +5,15 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import stat
+import zipfile
 from urllib.parse import urlsplit
 
 import requests
 
 from config import Config
-from updater.manifest import Manifest
+from updater.manifest import Manifest, FileEntry
+from updater.bootstrap import resolve_yandex_download
 
 
 class Cancelled(Exception):
@@ -102,6 +105,8 @@ class SurvivorsInstaller:
                 if len(response.content) > 128 * 1024:
                     raise ValueError('Слишком большой манифест режима.')
                 manifest = validate_manifest(response.json())
+            if self._needs_bootstrap(manifest):
+                self._bootstrap(session, manifest)
             needed = []
             for entry in manifest.files:
                 self._check()
@@ -127,9 +132,98 @@ class SurvivorsInstaller:
             state = self._safe('.version.new')
             state.write_text(manifest.version, encoding='ascii')
             os.replace(state, self._safe('.version'))
+            self._safe('.downloads/survivors-client.zip').unlink(missing_ok=True)
         return self.root
 
-    def _download(self, session, entry, done, total):
+    def _needs_bootstrap(self, manifest):
+        # После отмены распаковки используем уже скачанный архив повторно.
+        if (self._safe('.downloads/survivors-client.zip').is_file()
+                or self._safe('.downloads/' + Config.SURVIVORS_ARCHIVE_SHA256 + '.part').is_file()):
+            return True
+        # Уже начатую пофайловую установку продолжаем без большого архива.
+        return not any(
+            self._safe(entry.path).is_file()
+            or self._safe('.downloads/' + entry.sha256 + '.part').is_file()
+            for entry in manifest.files
+        )
+
+    def _bootstrap(self, session, manifest):
+        archive = self._safe('.downloads/survivors-client.zip')
+        size, digest = Config.SURVIVORS_ARCHIVE_SIZE, Config.SURVIVORS_ARCHIVE_SHA256
+        partial = self._safe('.downloads/' + digest + '.part')
+        present = partial.stat().st_size if partial.is_file() else 0
+        archive_ready = archive.is_file() and archive.stat().st_size == size and self._digest(archive) == digest
+        required = sum(entry.size for entry in manifest.files)
+        if not archive_ready:
+            required += size - present if present <= size else size
+        if shutil.disk_usage(self.root).free < required + 128 * 1024**2:
+            raise OSError('Недостаточно места для архива и распаковки Warcraft Survivors.')
+        if not archive_ready:
+            self._check()
+            self.progress('Получение ссылки Яндекс Диска…', -1)
+            href, remote_size = resolve_yandex_download(Config.SURVIVORS_ARCHIVE_PUBLIC_URL)
+            if remote_size != size:
+                raise ValueError('Архив Survivors на Яндекс Диске изменился. Обратитесь к администратору.')
+            try:
+                self._download(session, FileEntry('.downloads/survivors-client.zip', size, digest, href),
+                               0, size, label='клиента с Яндекс Диска')
+            except requests.RequestException:
+                raise OSError('Не удалось скачать архив с Яндекс Диска. Повторите запуск для продолжения.') from None
+        self._extract_archive(archive, manifest)
+
+    def _extract_archive(self, archive, manifest):
+        # Устанавливаем только управляемые файлы; чужие профили и лаунчеры
+        # из архива никогда не попадают в установку игрока.
+        entries = {entry.path.casefold(): entry for entry in manifest.files}
+        with zipfile.ZipFile(archive) as source:
+            selected = {}
+            for member in source.infolist():
+                self._check()
+                name = member.filename.replace('\\', '/')
+                parts = name.rstrip('/').split('/')
+                if (name.startswith('/') or any(part in ('', '.', '..') or ':' in part for part in parts)
+                        or stat.S_ISLNK(member.external_attr >> 16)):
+                    raise ValueError('В архиве Survivors обнаружен небезопасный путь.')
+                if parts[0].casefold() == 'survivors':
+                    parts = parts[1:]
+                key = '/'.join(parts).casefold()
+                if member.is_dir() or key not in entries:
+                    continue
+                if key in selected or member.file_size > 8 * 1024**3:
+                    raise ValueError('Некорректный состав архива Survivors.')
+                selected[key] = member
+            if not {'data/terrain.mpq', 'data/patch.mpq'} <= selected.keys():
+                raise ValueError('В архиве не найдены данные Warcraft Survivors.')
+            for key, member in selected.items():
+                self._check()
+                entry = entries[key]
+                # Устаревшие файлы архива заменятся актуальными с сервера.
+                if member.file_size != entry.size:
+                    continue
+                target = self._safe(entry.path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                temporary = self._safe('.downloads/' + entry.sha256 + '.extract')
+                temporary.parent.mkdir(exist_ok=True)
+                digest = hashlib.sha256()
+                written = 0
+                self.progress('Распаковка ' + entry.path + '…', -1)
+                try:
+                    with source.open(member) as src, temporary.open('wb') as dst:
+                        while block := src.read(1024 * 1024):
+                            self._check()
+                            written += len(block)
+                            if written > entry.size:
+                                raise ValueError('Превышен размер файла в архиве.')
+                            digest.update(block)
+                            dst.write(block)
+                    if written == entry.size and digest.hexdigest() == entry.sha256:
+                        self._check()
+                        os.replace(temporary, target)
+                finally:
+                    temporary.unlink(missing_ok=True)
+
+    def _download(self, session, entry, done, total, label=None):
+        label = label or entry.path
         target = self._safe(entry.path)
         target.parent.mkdir(parents=True, exist_ok=True)
         parts = self._safe('.downloads')
@@ -159,12 +253,12 @@ class SurvivorsInstaller:
                                 raise ValueError('Сервер превысил заявленный размер файла.')
                             stream.write(block)
                             self.progress(
-                                f'Загрузка {entry.path} · {(done + current) / 1024**3:.2f} / {total / 1024**3:.2f} ГиБ',
+                                f'Загрузка {label} · {(done + current) / 1024**3:.2f} / {total / 1024**3:.2f} ГиБ',
                                 min(99, int((done + current) * 100 / total)),
                             )
         if current != entry.size:
             raise OSError('Загрузка прервалась. Нажмите «Войти и играть» для продолжения.')
-        self.progress('Проверка загрузки ' + entry.path + '…', -1)
+        self.progress('Проверка загрузки ' + label + '…', -1)
         if self._digest(partial) != entry.sha256:
             partial.unlink()
             raise ValueError('Контрольная сумма файла не совпала. Повторите загрузку.')

@@ -45,6 +45,9 @@ class Config:
 
     SURVIVORS_BASE_URL = f"{UPDATE_BASE_URL}/survivors"
     SURVIVORS_MANIFEST_URL = f"{SURVIVORS_BASE_URL}/manifest.json"
+    SURVIVORS_ARCHIVE_PUBLIC_URL = "https://disk.yandex.ru/d/fxffTTHSeFgrgg"
+    SURVIVORS_ARCHIVE_SIZE = 5409017337
+    SURVIVORS_ARCHIVE_SHA256 = "d96977d28c8dd1cdfa28b98e48856a8012042a1f4d962fedde186c4a15f339b1"
     AUTH_HOST = "wotlk.amatol.blog"
     AUTH_PORT = 3724
 
@@ -62,8 +65,8 @@ class Config:
 
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
-    # Разовое разрешение владельца: публикация 21.10 под датой 22.10 для автообновления.
-    LAUNCHER_VERSION = "20261022"
+    # Дополнительный выпуск 21.10: 20261021 и 20261022 уже опубликованы.
+    LAUNCHER_VERSION = "20261023"
 
     # URL манифеста обновлений лаунчера (JSON)
     LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"

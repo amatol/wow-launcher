@@ -64,6 +64,9 @@ class SurvivorsTests(unittest.TestCase):
 
     def test_install_checks_every_file_and_preserves_wotlk(self):
         (self.parent / 'Wow.exe').write_bytes(b'original-wow')
+        partial = self.installer.root / '.downloads' / (self.data['files'][0]['sha256'] + '.part')
+        partial.parent.mkdir(parents=True)
+        partial.touch()
         meta = response()
         meta.json.return_value = self.data
         session = MagicMock()

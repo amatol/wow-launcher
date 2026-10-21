@@ -17,7 +17,7 @@ def metadata(path, url, version):
     content = path.read_bytes()
     return {'version': version, 'download_url': url, 'size': len(content),
             'sha256': hashlib.sha256(content).hexdigest(),
-            'changelog': 'Режим устанавливается в папку Survivors. Прежние файлы, профили и недокачанные части переносятся автоматически.'}
+            'changelog': 'Первая установка Warcraft Survivors загружается с Яндекс Диска. Готовые файлы и недокачанные части сохраняются; обновления проверяются по SHA-256.'}
 
 
 def atomic_json(path, data):

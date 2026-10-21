@@ -43,6 +43,11 @@ class Config:
     # URL манифеста аддонов (JSON: список {name, version, url, sha256, ...})
     ADDONS_MANIFEST_URL = f"{UPDATE_BASE_URL}/addons_manifest.json"
 
+    SURVIVORS_BASE_URL = f"{UPDATE_BASE_URL}/survivors"
+    SURVIVORS_MANIFEST_URL = f"{SURVIVORS_BASE_URL}/manifest.json"
+    AUTH_HOST = "wotlk.amatol.blog"
+    AUTH_PORT = 3724
+
     # Папка для аддонов внутри клиента WoW
     ADDONS_DIR = os.path.join(GAME_DIR, "Interface", "AddOns")
 
@@ -57,7 +62,7 @@ class Config:
 
     # --- Самообновление лаунчера ---
     # Версия самого лаунчера (формат YYYYMMDD)
-    LAUNCHER_VERSION = "20261013"
+    LAUNCHER_VERSION = "20261021"
 
     # URL манифеста обновлений лаунчера (JSON)
     LAUNCHER_MANIFEST_URL = f"{UPDATE_BASE_URL}/launcher_manifest.json"

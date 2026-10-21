@@ -285,6 +285,7 @@ class MainWindow(QMainWindow):
         self.check_worker = None
         self.addons_check_worker = None
         self.addons_dialog = None
+        self.survivors_process = None
         self._addons_have_updates = False
 
         self._apply_dark_theme()
@@ -350,6 +351,11 @@ class MainWindow(QMainWindow):
         self.btn_cancel.clicked.connect(self.cancel_update)
         right_layout.addWidget(self.btn_play)
         right_layout.addWidget(self.btn_cancel)
+        self.btn_survivors = QPushButton("Warcraft Survivors")
+        self.btn_survivors.setFixedHeight(40)
+        self.btn_survivors.setToolTip("Отдельный одиночный режим · вход с аккаунтом Dreamworld")
+        self.btn_survivors.clicked.connect(self.open_survivors)
+        right_layout.addWidget(self.btn_survivors)
         self.btn_addons = QPushButton("Аддоны")
         self.btn_addons.setFixedHeight(40)
         self.btn_addons.clicked.connect(self.open_addons)
@@ -358,7 +364,7 @@ class MainWindow(QMainWindow):
         self.btn_account.clicked.connect(self.open_account)
         right_layout.addWidget(self.btn_addons)
         right_layout.addWidget(self.btn_account)
-        for button in (self.btn_play, self.btn_cancel, self.btn_addons, self.btn_account):
+        for button in (self.btn_play, self.btn_cancel, self.btn_survivors, self.btn_addons, self.btn_account):
             button.setCursor(Qt.PointingHandCursor)
         main_row.addWidget(right_panel)
         outer.addLayout(main_row, 1)
@@ -598,6 +604,16 @@ class MainWindow(QMainWindow):
         self.addons_dialog = AddonsDialog(self, auto_update=self._addons_have_updates)
         self.addons_dialog.addons_changed.connect(self._on_addons_checked)
         self.addons_dialog.exec_()
+
+    def open_survivors(self):
+        if self.survivors_process and self.survivors_process.poll() is None:
+            QMessageBox.information(self, "Warcraft Survivors", "Режим уже запущен. Вернитесь в окно игры.")
+            return
+        from ui.survivors_dialog import SurvivorsDialog
+        dialog = SurvivorsDialog(self)
+        dialog.exec_()
+        if dialog.process:
+            self.survivors_process = dialog.process
 
     def open_account(self):
         dialog = QDialog(self)

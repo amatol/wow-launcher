@@ -17,7 +17,7 @@ def metadata(path, url, version):
     content = path.read_bytes()
     return {'version': version, 'download_url': url, 'size': len(content),
             'sha256': hashlib.sha256(content).hexdigest(),
-            'changelog': 'Поддержка macOS прекращена. Старые компоненты macOS автоматически удаляются из папки клиента.'}
+            'changelog': 'Добавлен отдельный режим Warcraft Survivors: вход с аккаунтом Dreamworld, установка и запуск из лаунчера.'}
 
 
 def atomic_json(path, data):

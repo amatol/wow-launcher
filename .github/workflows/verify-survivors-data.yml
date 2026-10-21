@@ -1,0 +1,57 @@
+name: Verify Warcraft Survivors Windows with game data
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  boot:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Download and verify the published mode
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $manifest = Invoke-RestMethod 'https://wotlk.amatol.blog/launcher/survivors/manifest.json'
+          if ($manifest.upstream.revision -ne '7c6c848d5c78e2adeaaf9f3b7715fe106e2c0a98') { throw 'Unexpected upstream revision' }
+          New-Item -ItemType Directory game
+          foreach ($file in $manifest.files) {
+            if ($file.path -notmatch '^(Data/[A-Za-z0-9_.-]+\.[Mm][Pp][Qq]|warcraft-survivors\.exe|VCRUNTIME140\.dll|LICENSE-MIT|LICENSE-APACHE|UPSTREAM_REVISION\.txt)$') { throw 'Unexpected file path' }
+            if (-not $file.http_url.StartsWith('https://wotlk.amatol.blog/launcher/survivors/releases/')) { throw 'Unexpected download origin' }
+            $target = Join-Path 'game' $file.path
+            New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+            Invoke-WebRequest $file.http_url -OutFile $target
+            if ((Get-Item $target).Length -ne $file.size -or (Get-FileHash $target -Algorithm SHA256).Hash.ToLower() -ne $file.sha256) { throw "File mismatch: $($file.path)" }
+            Write-Output "VERIFIED: $($file.path)"
+          }
+      - name: Boot the actual mode with data without starting combat
+        shell: pwsh
+        run: |
+          $env:WOW_DATA = (Resolve-Path 'game/Data').Path
+          $env:WOW_NOSOUND = '1'
+          $env:WOW_UNATTENDED = '1'
+          $env:WOW_BG = '1'
+          $env:BENILLA_HOME = Join-Path $env:RUNNER_TEMP 'survivors-real-data-state'
+          $output = Join-Path $env:RUNNER_TEMP 'survivors-data-stdout.txt'
+          $errors = Join-Path $env:RUNNER_TEMP 'survivors-data-stderr.txt'
+          $exe = (Resolve-Path 'game/warcraft-survivors.exe').Path
+          $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru -RedirectStandardOutput $output -RedirectStandardError $errors
+          Start-Sleep -Seconds 40
+          $exited = $process.HasExited
+          $text = (Get-Content $output -Raw -ErrorAction SilentlyContinue) + (Get-Content $errors -Raw -ErrorAction SilentlyContinue)
+          if (-not $exited) { Stop-Process -Id $process.Id -Force }
+          $text | Write-Output
+          if ($exited -or $text -match 'panicked at|no WoW install found|mpq:// source unavailable') { throw 'The actual game did not remain running with its data' }
+          if ($text -notmatch 'Map.dbc: [1-9][0-9]* maps catalogued') { throw 'Game data was not read by the engine' }
+          'WINDOWS_REAL_DATA_BOOT: PASS (software DX12, menu only, no combat probe)'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Warcraft-Survivors-real-data-logs
+          path: |
+            ${{ runner.temp }}/survivors-data-stdout.txt
+            ${{ runner.temp }}/survivors-data-stderr.txt

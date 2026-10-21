@@ -37,7 +37,7 @@ class UiLayoutTests(unittest.TestCase):
         for _ in range(3):
             self.app.processEvents()
         self.assertEqual((window.width(), window.height()), (720, 400))
-        for button in (window.btn_play, window.btn_addons, window.btn_account):
+        for button in (window.btn_play, window.btn_survivors, window.btn_addons, window.btn_account):
             bottom_right = button.mapTo(window, button.rect().bottomRight())
             self.assertTrue(window.rect().contains(bottom_right))
             self.assertTrue(window.rect().contains(button.mapTo(window, QPoint(0, 0))))
